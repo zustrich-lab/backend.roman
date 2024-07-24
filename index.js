@@ -651,7 +651,7 @@ bot.onText(/\/start(?: (.+))?/, async (msg, match) => {
       }
     }
 
-    const appUrl = `https://glittery-starburst-c29cf3.netlify.app/?userId=${userId}`;
+    const appUrl = `https://dancing-mandazi-ea69b0.netlify.app/?userId=${userId}`;
     const channelUrl = `https://t.me/octies_channel`;
 
     const imagePath = path.join(__dirname, 'images', 'Octies_bot_logo.png');
