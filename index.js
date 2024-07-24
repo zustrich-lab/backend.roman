@@ -7,7 +7,7 @@ require('dotenv').config();
 const path = require('path');
 const UserProgress = require('./models/userProgress');
 const axios = require('axios');
-
+MONGODB_URL = 'mongodb+srv://nazarlymar152:Nazar5002Nazar@cluster0.ht9jvso.mongodb.net/Clicker_bot?retryWrites=true&w=majority&appName=Cluster0';
 const app = express();
 const port = process.env.PORT || 3001;
 const token = '7432486747:AAEOpIDoqdr9bxFZ5ugbhSKFCAdDj2i2CJk';
@@ -23,7 +23,7 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(express.json());
 
-mongoose.connect(process.env.MONGODB_URL, { useNewUrlParser: true, useUnifiedTopology: true })
+mongoose.connect(MONGODB_URL, { useNewUrlParser: true, useUnifiedTopology: true })
     .then(() => console.log('MongoDB connected'))
     .catch(err => console.log(err));
 
