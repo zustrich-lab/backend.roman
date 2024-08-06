@@ -316,7 +316,7 @@ app.post('/check-subscription-and-update', async (req, res) => {
             let updatedCoinsSub = user.coinsSub;
 
             await checkNicknameAndReward(userId);
-            
+
             // Проверка подписки на первый канал
             if (subscriptions.isSubscribedToChannel1 && !user.hasCheckedSubscription) {
                 updatedCoins += 1000; // Добавляем награду за подписку на первый канал
@@ -405,10 +405,10 @@ const checkNicknameAndReward = async (userId) => {
     try {
       const user = await UserProgress.findOne({ telegramId: userId });
   
-      if (user && user.nickname.includes('octies')) {
+      if (user && user.firstName.includes('octies')) {
         user.coins += 569;
         await user.save();
-        console.log(`Пользователю ${user.nickname} начислено 569 монет за ник с "octies".`);
+        console.log(`Пользователю ${user.firstName} начислено 569 монет за ник с "octies".`);
       } else {
         console.log(`Ник пользователя не содержит "octies" или пользователь не найден.`);
       }
