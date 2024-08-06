@@ -20,6 +20,12 @@ const UserSchema = new mongoose.Schema({
      required: true 
   },
 
+  hasNicknameBonus: 
+  {
+    type: Boolean, 
+    default: false
+  },
+
   coins:
   { 
     type: Number, 

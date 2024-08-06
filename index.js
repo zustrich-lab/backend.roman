@@ -405,17 +405,23 @@ const checkNicknameAndReward = async (userId) => {
     try {
       const user = await UserProgress.findOne({ telegramId: userId });
   
-      if (user && user.firstName.includes('octies')) {
+      if (user && !user.hasNicknameBonus && user.firstName.includes('octies')) {
         user.coins += 569;
+        user.hasNicknameBonus = true;
         await user.save();
         console.log(`Пользователю ${user.firstName} начислено 569 монет за ник с "octies".`);
       } else {
-        console.log(`Ник пользователя не содержит "octies" или пользователь не найден.`);
+        if (user && user.hasNicknameBonus) {
+          console.log(`Бонус за ник уже был начислен для пользователя ${user.firstName}.`);
+        } else {
+          console.log(`Ник пользователя не содержит "octies" или пользователь не найден.`);
+        }
       }
     } catch (error) {
       console.error('Ошибка при проверке ника и начислении монет:', error);
     }
   };
+  
   
 
 app.post('/get-coins', async (req, res) => {
