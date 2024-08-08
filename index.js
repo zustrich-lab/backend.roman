@@ -19,6 +19,13 @@ const CHANNEL_ID_4 = -1002241923161;
 
 const userStates = {};
 
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Обслуживание tonconnect-manifest.json
+app.get('/tonconnect-manifest.json', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'tonconnect-manifest.json'));
+});
+
 app.use(cors());
 app.use(bodyParser.json());
 app.use(express.json());
