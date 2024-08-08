@@ -19,12 +19,7 @@ const CHANNEL_ID_4 = -1002241923161;
 
 const userStates = {};
 
-app.use(express.static(path.join(__dirname, 'public')));
 
-// Обслуживание tonconnect-manifest.json
-app.get('/tonconnect-manifest.json', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'tonconnect-manifest.json'));
-});
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -517,6 +512,24 @@ app.get('/leaderboard', async (req, res) => {
     res.status(500).json({ success: false, message: 'Ошибка сервера' });
   }
 });
+
+app.post('/get-referral-count', async (req, res) => {
+    const { userId } = req.body;
+  
+    try {
+      const user = await UserProgress.findOne({ telegramId: userId });
+      if (user) {
+        const referralCount = user.referredUsers ? user.referredUsers.length : 0;
+        res.json({ success: true, referralCount });
+      } else {
+        res.status(404).json({ success: false, message: 'User not found.' });
+      }
+    } catch (error) {
+      console.error('Error fetching referral count:', error);
+      res.status(500).json({ success: false, message: 'Server error' });
+    }
+  });
+  
 
 app.post('/add-coins', async (req, res) => {
     const { userId, amount } = req.body;
