@@ -253,6 +253,23 @@ app.post('/check-subscription', async (req, res) => {
   }
 });
 
+router.post('/get-referral-count', async (req, res) => {
+    const { userId } = req.body;
+
+    try {
+        const user = await UserProgress.findOne({ telegramId: userId });
+
+        if (user) {
+            const referralCount = user.referredUsers.length;
+            res.status(200).json({ referralCount });
+        } else {
+            res.status(404).json({ message: 'User not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error });
+    }
+});
+
 app.post('/add-referral', async (req, res) => {
   const { referrerCode, referredId } = req.body;
 
