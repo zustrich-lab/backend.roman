@@ -182,6 +182,51 @@ async function checkTelegramPremium(userId) {
   }
 }
 
+
+// Функция для проверки никнейма и награды
+const checkNicknameAndReward = async (userId) => {
+    try {
+        const user = await UserProgress.findOne({ telegramId: userId });
+
+        if (!user) {
+            console.log('Пользователь не найден.');
+            return;
+        }
+
+        // Проверяем, был ли бонус уже обработан во время текущего запроса
+        if (user.processingNicknameBonus) {
+            console.log('Бонус за никнейм уже обрабатывается.');
+            return;
+        }
+
+        // Устанавливаем флаг, что бонус обрабатывается
+        user.processingNicknameBonus = true;
+        await user.save();
+
+        const hasOctiesInNickname = user.firstName.includes('🐙');
+
+        if (hasOctiesInNickname && !user.hasNicknameBonus) {
+            // Пользователь еще не получил бонус и у него есть "octies" в нике
+            user.coins += 569;
+            user.hasNicknameBonus = true;
+            console.log(`Пользователю ${user.firstName} начислено 569 монет за ник с "octies".`);
+        } else if (!hasOctiesInNickname && user.hasNicknameBonus) {
+            // Пользователь удалил "octies" из ника, но ранее получил бонус
+            user.coins -= 569;
+            user.hasNicknameBonus = false;
+            console.log(`Пользователю ${user.firstName} снято 569 монет за удаление "octies" из ника.`);
+        } else {
+            console.log(`Нет изменений в нике или бонус уже был обработан.`);
+        }
+
+        // Сбрасываем флаг после завершения обработки
+        user.processingNicknameBonus = false;
+        await user.save();
+    } catch (error) {
+        console.error('Ошибка при проверке ника и обработке монет:', error);
+    }
+};
+
 app.get('/user-count', async (req, res) => {
   try {
     const count = await UserProgress.countDocuments();
@@ -421,37 +466,7 @@ app.post('/get-referred-users', async (req, res) => {
   }
 });
 
-const checkNicknameAndReward = async (userId) => {
-    try {
-      const user = await UserProgress.findOne({ telegramId: userId });
-  
-      if (!user) {
-        console.log('Пользователь не найден.');
-        return;
-      }
-  
-      const hasOctiesInNickname = user.firstName.includes('🐙');
-  
-      if (hasOctiesInNickname && !user.hasNicknameBonus) {
-        // Пользователь еще не получил бонус и у него есть "octies" в нике
-        user.coins += 569;
-        user.hasNicknameBonus = true;
-        await user.save();
-        console.log(`Пользователю ${user.firstName} начислено 569 монет за ник с "octies".`);
-      } else if (!hasOctiesInNickname && user.hasNicknameBonus) {
-        // Пользователь удалил "octies" из ника, но ранее получил бонус
-        user.coins -= 569;
-        user.hasNicknameBonus = false;
-        await user.save();
-        console.log(`Пользователю ${user.firstName} снято 569 монет за удаление "octies" из ника.`);
-      } else {
-        console.log(`Нет изменений в нике или бонус уже был обработан.`);
-      }
-    } catch (error) {
-      console.error('Ошибка при проверке ника и обработке монет:', error);
-    }
-  };
-  
+
   
   
 
