@@ -6,6 +6,7 @@ const TelegramBot = require('node-telegram-bot-api');
 require('dotenv').config();
 const path = require('path');
 const UserProgress = require('./models/userProgress');
+const GlobalTransactionCounter = require('./models/GlobalTransactionCounter');
 const axios = require('axios');
 MONGODB_URL = 'mongodb+srv://nazarlymar152:Nazar5002Nazar@cluster0.ht9jvso.mongodb.net/Clicker_bot?retryWrites=true&w=majority&appName=Cluster0';
 const app = express();
@@ -307,30 +308,41 @@ app.post('/check-subscription', async (req, res) => {
   }
 });
 
+
+
 app.post('/record-transaction', async (req, res) => {
-  const { userId } = req.body;
+    const { userId } = req.body;
 
-  try {
-      // Находим пользователя по его ID
-      const user = await UserProgress.findOne({ telegramId: userId });
-      
-      if (!user) {
-          return res.status(404).json({ success: false, message: 'Пользователь не найден.' });
-      }
+    try {
+        // Находим пользователя по его ID
+        const user = await UserProgress.findOne({ telegramId: userId });
+        
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'Пользователь не найден.' });
+        }
 
-      // Увеличиваем счетчик транзакций
-      const transactionCount = await UserProgress.countDocuments();
-      user.transactionNumber = transactionCount + 1;
+        // Ищем глобальный счетчик транзакций
+        let counter = await GlobalTransactionCounter.findOne();
+        
+        // Если документа еще нет, создаем его
+        if (!counter) {
+            counter = new GlobalTransactionCounter();
+        }
 
-      // Сохраняем изменения в базе данных
-      await user.save();
+        // Увеличиваем счетчик и сохраняем
+        counter.count += 1;
+        await counter.save();
 
-      // Возвращаем номер транзакции
-      res.json({ success: true, transactionNumber: user.transactionNumber });
-  } catch (error) {
-      console.error('Ошибка при записи транзакции:', error);
-      res.status(500).json({ success: false, message: 'Ошибка при записи транзакции.' });
-  }
+        // Сохраняем номер транзакции для пользователя
+        user.transactionNumber = counter.count;
+        await user.save();
+
+        // Возвращаем номер транзакции
+        res.json({ success: true, transactionNumber: user.transactionNumber });
+    } catch (error) {
+        console.error('Ошибка при записи транзакции:', error);
+        res.status(500).json({ success: false, message: 'Ошибка при записи транзакции.' });
+    }
 });
 
 
