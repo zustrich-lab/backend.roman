@@ -541,6 +541,7 @@ app.post('/get-coins', async (req, res) => {
             hasCheckedSubscription2: user.hasCheckedSubscription2,
             hasCheckedSubscription3: user.hasCheckedSubscription3,
             hasCheckedSubscription4: user.hasCheckedSubscription4,
+            transactionNumber: user.transactionNumber,
             accountCreationDate: accountCreationDate.toISOString()
         });
     } catch (error) {
