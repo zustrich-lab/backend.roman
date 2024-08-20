@@ -71,6 +71,11 @@ const UserSchema = new mongoose.Schema({
     
   },
 
+  transactionNumber: { 
+    type: Number, 
+    default: 0 
+  },
+
   referralCode:
   { 
     type: String,

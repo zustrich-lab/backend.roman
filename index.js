@@ -307,6 +307,33 @@ app.post('/check-subscription', async (req, res) => {
   }
 });
 
+app.post('/record-transaction', async (req, res) => {
+  const { userId } = req.body;
+
+  try {
+      // Находим пользователя по его ID
+      const user = await UserProgress.findOne({ telegramId: userId });
+      
+      if (!user) {
+          return res.status(404).json({ success: false, message: 'Пользователь не найден.' });
+      }
+
+      // Увеличиваем счетчик транзакций
+      const transactionCount = await UserProgress.countDocuments();
+      user.transactionNumber = transactionCount + 1;
+
+      // Сохраняем изменения в базе данных
+      await user.save();
+
+      // Возвращаем номер транзакции
+      res.json({ success: true, transactionNumber: user.transactionNumber });
+  } catch (error) {
+      console.error('Ошибка при записи транзакции:', error);
+      res.status(500).json({ success: false, message: 'Ошибка при записи транзакции.' });
+  }
+});
+
+
 
 app.post('/get-referral-count', async (req, res) => {
     const { userId } = req.body;
@@ -446,7 +473,8 @@ app.post('/check-subscription-and-update', async (req, res) => {
                 hasCheckedSubscription: user.hasCheckedSubscription,
                 hasCheckedSubscription2: user.hasCheckedSubscription2,
                 hasCheckedSubscription3: user.hasCheckedSubscription3,
-                hasCheckedSubscription4: user.hasCheckedSubscription4
+                hasCheckedSubscription4: user.hasCheckedSubscription4,
+                hasOctiesInNickname: user.hasNicknameBonus
             });
         } else {
             res.status(404).json({ success: false, message: 'Пользователь не найден.' });
