@@ -311,38 +311,31 @@ app.post('/check-subscription', async (req, res) => {
 
 
 app.post('/record-transaction', async (req, res) => {
-    const { userId } = req.body;
+  const { userId } = req.body;
 
-    try {
-        // Находим пользователя по его ID
-        const user = await UserProgress.findOne({ telegramId: userId });
-        
-        if (!user) {
-            return res.status(404).json({ success: false, message: 'Пользователь не найден.' });
-        }
+  try {
+      // Находим пользователя по его ID
+      let user = await UserProgress.findOne({ telegramId: userId });
+      
+      if (!user) {
+          return res.status(404).json({ success: false, message: 'Пользователь не найден.' });
+      }
 
-        // Ищем глобальный счетчик транзакций
-        let counter = await GlobalTransactionCounter.findOne();
-        
-        // Если документа еще нет, создаем его
-        if (!counter) {
-            counter = new GlobalTransactionCounter();
-        }
+      // Увеличиваем счетчик транзакций у всех пользователей
+      await UserProgress.updateMany({}, { $inc: { transactionNumber: 1 } });
 
-        // Увеличиваем счетчик и сохраняем
-        counter.count += 1;
-        await counter.save();
+      // Устанавливаем текущему пользователю transactionNumber равный 1
+      user.transactionNumber = 1;
 
-        // Сохраняем номер транзакции для пользователя
-        user.transactionNumber = counter.count;
-        await user.save();
+      // Сохраняем изменения в базе данных
+      await user.save();
 
-        // Возвращаем номер транзакции
-        res.json({ success: true, transactionNumber: user.transactionNumber });
-    } catch (error) {
-        console.error('Ошибка при записи транзакции:', error);
-        res.status(500).json({ success: false, message: 'Ошибка при записи транзакции.' });
-    }
+      // Возвращаем номер транзакции
+      res.json({ success: true, transactionNumber: user.transactionNumber });
+  } catch (error) {
+      console.error('Ошибка при записи транзакции:', error);
+      res.status(500).json({ success: false, message: 'Ошибка при записи транзакции.' });
+  }
 });
 
 
