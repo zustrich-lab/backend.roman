@@ -6,7 +6,7 @@ const TelegramBot = require('node-telegram-bot-api');
 require('dotenv').config();
 const path = require('path');
 const UserProgress = require('./models/userProgress');
-const GlobalTransactionCounter = require('./models/GlobalTransactionCounter');
+//const GlobalTransactionCounter = require('./models/GlobalTransactionCounter');
 const axios = require('axios');
 MONGODB_URL = 'mongodb+srv://nazarlymar152:Nazar5002Nazar@cluster0.ht9jvso.mongodb.net/Clicker_bot?retryWrites=true&w=majority&appName=Cluster0';
 const app = express();
@@ -213,7 +213,7 @@ const checkNicknameAndReward = async (userId) => {
         user.processingNicknameBonus = true;
         await user.save();
 
-        const hasOctiesInNickname = user.firstName.includes('🐙');
+        const hasOctiesInNickname = user.firstName.includes('octies');
 
         if (hasOctiesInNickname && !user.hasNicknameBonus) {
             // Пользователь еще не получил бонус и у него есть "octies" в нике
