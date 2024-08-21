@@ -129,6 +129,8 @@ function calculateCoins(accountCreationDate, hasTelegramPremium, subscriptions) 
     const subscriptionBonus2 = subscriptions.isSubscribedToChannel2 ? 750 : 0;
     const subscriptionBonus3 = subscriptions.isSubscribedToChannel3 ? 750 : 0;
     const subscriptionBonus4 = subscriptions.isSubscribedToChannel4 ? 750 : 0;
+   
+
     
     return baseCoins + premiumBonus + subscriptionBonus1 + subscriptionBonus2 + subscriptionBonus3 + subscriptionBonus4;
   }
@@ -473,9 +475,7 @@ app.post('/check-subscription-and-update', async (req, res) => {
                 updatedCoinsSub -= 750; // Вычитаем монеты за отписку в отдельное поле
                 user.hasCheckedSubscription4 = false;
             }
-            if(user.hasReceivedTwitterReward){
-              updatedCoins +=500;
-            }
+            
 
             user.coins = updatedCoins;
             user.coinsSub = updatedCoinsSub;
@@ -776,6 +776,9 @@ bot.onText(/\/start(?: (.+))?/, async (msg, match) => {
       user.hasCheckedSubscription2 = subscriptions.isSubscribedToChannel2;
       user.hasCheckedSubscription3 = subscriptions.isSubscribedToChannel3;
       user.hasCheckedSubscription4 = subscriptions.isSubscribedToChannel4;
+      if(user.hasReceivedTwitterReward){
+        user.coins += 500;
+      }
       await user.save();
     }
 
