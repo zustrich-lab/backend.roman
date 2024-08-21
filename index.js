@@ -473,6 +473,9 @@ app.post('/check-subscription-and-update', async (req, res) => {
                 updatedCoinsSub -= 750; // Вычитаем монеты за отписку в отдельное поле
                 user.hasCheckedSubscription4 = false;
             }
+            if(user.hasReceivedTwitterReward){
+              updatedCoins +=500;
+            }
 
             user.coins = updatedCoins;
             user.coinsSub = updatedCoinsSub;
