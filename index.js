@@ -536,7 +536,7 @@ app.post('/get-coins', async (req, res) => {
           user = new UserProgress({
               telegramId: userId,
               coins: coins,
-              coinsSub: 0,  // сохраняем монеты за подписки отдельно
+              coinsSub: 0,
               hasTelegramPremium: hasTelegramPremium,
               hasCheckedSubscription: subscriptions.isSubscribedToChannel1,
               hasCheckedSubscription2: subscriptions.isSubscribedToChannel2,
@@ -546,11 +546,21 @@ app.post('/get-coins', async (req, res) => {
           await user.save();
       }
 
-      // Вызов функции для проверки ника и начисления награды
+      // Получение актуального никнейма пользователя через Telegram API
+      const chatMember = await bot.getChatMember(CHANNEL_ID, userId);
+      const firstName = chatMember.user.first_name;
+
+      // Обновляем никнейм пользователя, если он изменился
+      if (user.firstName !== firstName) {
+          user.firstName = firstName;
+          await user.save();
+      }
+
+      // Проверяем никнейм и начисляем награду, если необходимо
       await checkNicknameAndReward(userId);
 
       const referralCoins = user.referredUsers.reduce((acc, ref) => acc + ref.earnedCoins, 0);
-      const totalCoins = user.coins;  // суммируем все монеты
+      const totalCoins = user.coins;
       res.json({
           coins: totalCoins,
           referralCoins: referralCoins,
@@ -559,8 +569,8 @@ app.post('/get-coins', async (req, res) => {
           hasCheckedSubscription2: user.hasCheckedSubscription2,
           hasCheckedSubscription3: user.hasCheckedSubscription3,
           hasCheckedSubscription4: user.hasCheckedSubscription4,
-          transactionNumber: user.transactionNumber,
           hasNicknameBonus: user.hasNicknameBonus,
+          transactionNumber: user.transactionNumber,
           accountCreationDate: accountCreationDate.toISOString()
       });
   } catch (error) {
