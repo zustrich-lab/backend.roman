@@ -523,46 +523,49 @@ app.post('/get-referred-users', async (req, res) => {
   
 
 app.post('/get-coins', async (req, res) => {
-    const { userId } = req.body;
-    const accountCreationDate = estimateAccountCreationDate(userId);
+  const { userId } = req.body;
+  const accountCreationDate = estimateAccountCreationDate(userId);
 
-    try {
-        const hasTelegramPremium = await checkTelegramPremium(userId);
-        const subscriptions = await checkChannelSubscription(userId);
+  try {
+      const hasTelegramPremium = await checkTelegramPremium(userId);
+      const subscriptions = await checkChannelSubscription(userId);
 
-        let user = await UserProgress.findOne({ telegramId: userId });
-        if (!user) {
-            const coins = calculateCoins(accountCreationDate, hasTelegramPremium, subscriptions);
-            user = new UserProgress({
-                telegramId: userId,
-                coins: coins,
-                coinsSub: 0,  // сохраняем монеты за подписки отдельно
-                hasTelegramPremium: hasTelegramPremium,
-                hasCheckedSubscription: subscriptions.isSubscribedToChannel1,
-                hasCheckedSubscription2: subscriptions.isSubscribedToChannel2,
-                hasCheckedSubscription3: subscriptions.isSubscribedToChannel3,
-                hasCheckedSubscription4: subscriptions.isSubscribedToChannel4
-            });
-            await user.save();
-        }
+      let user = await UserProgress.findOne({ telegramId: userId });
+      if (!user) {
+          const coins = calculateCoins(accountCreationDate, hasTelegramPremium, subscriptions);
+          user = new UserProgress({
+              telegramId: userId,
+              coins: coins,
+              coinsSub: 0,  // сохраняем монеты за подписки отдельно
+              hasTelegramPremium: hasTelegramPremium,
+              hasCheckedSubscription: subscriptions.isSubscribedToChannel1,
+              hasCheckedSubscription2: subscriptions.isSubscribedToChannel2,
+              hasCheckedSubscription3: subscriptions.isSubscribedToChannel3,
+              hasCheckedSubscription4: subscriptions.isSubscribedToChannel4
+          });
+          await user.save();
+      }
 
-        const referralCoins = user.referredUsers.reduce((acc, ref) => acc + ref.earnedCoins, 0);
-        const totalCoins = user.coins;  // суммируем все монеты
-        res.json({
-            coins: totalCoins,
-            referralCoins: referralCoins,
-            hasTelegramPremium: user.hasTelegramPremium,
-            hasCheckedSubscription: user.hasCheckedSubscription,
-            hasCheckedSubscription2: user.hasCheckedSubscription2,
-            hasCheckedSubscription3: user.hasCheckedSubscription3,
-            hasCheckedSubscription4: user.hasCheckedSubscription4,
-            transactionNumber: user.transactionNumber,
-            accountCreationDate: accountCreationDate.toISOString()
-        });
-    } catch (error) {
-        console.error('Ошибка при получении данных пользователя:', error);
-        res.status(500).json({ error: 'Ошибка сервера' });
-    }
+      // Вызов функции для проверки ника и начисления награды
+      await checkNicknameAndReward(userId);
+
+      const referralCoins = user.referredUsers.reduce((acc, ref) => acc + ref.earnedCoins, 0);
+      const totalCoins = user.coins;  // суммируем все монеты
+      res.json({
+          coins: totalCoins,
+          referralCoins: referralCoins,
+          hasTelegramPremium: user.hasTelegramPremium,
+          hasCheckedSubscription: user.hasCheckedSubscription,
+          hasCheckedSubscription2: user.hasCheckedSubscription2,
+          hasCheckedSubscription3: user.hasCheckedSubscription3,
+          hasCheckedSubscription4: user.hasCheckedSubscription4,
+          transactionNumber: user.transactionNumber,
+          accountCreationDate: accountCreationDate.toISOString()
+      });
+  } catch (error) {
+      console.error('Ошибка при получении данных пользователя:', error);
+      res.status(500).json({ error: 'Ошибка сервера' });
+  }
 });
 
 
