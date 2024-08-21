@@ -489,7 +489,7 @@ app.post('/check-subscription-and-update', async (req, res) => {
                 hasCheckedSubscription2: user.hasCheckedSubscription2,
                 hasCheckedSubscription3: user.hasCheckedSubscription3,
                 hasCheckedSubscription4: user.hasCheckedSubscription4,
-                hasOctiesInNickname: user.hasNicknameBonus
+                hasNicknameBonus: user.hasNicknameBonus,
             });
         } else {
             res.status(404).json({ success: false, message: 'Пользователь не найден.' });
