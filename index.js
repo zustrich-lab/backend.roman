@@ -1,9 +1,9 @@
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const TelegramBot = require('node-telegram-bot-api');
-require('dotenv').config();
 const path = require('path');
 const UserProgress = require('./models/userProgress');
 //const GlobalTransactionCounter = require('./models/GlobalTransactionCounter');
@@ -19,8 +19,6 @@ const CHANNEL_ID_3 = -1002088709942;
 const CHANNEL_ID_4 = -1002241923161; 
 
 const userStates = {};
-
-
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -130,8 +128,6 @@ function calculateCoins(accountCreationDate, hasTelegramPremium, subscriptions) 
     const subscriptionBonus3 = subscriptions.isSubscribedToChannel3 ? 750 : 0;
     const subscriptionBonus4 = subscriptions.isSubscribedToChannel4 ? 750 : 0;
    
-
-    
     return baseCoins + premiumBonus + subscriptionBonus1 + subscriptionBonus2 + subscriptionBonus3 + subscriptionBonus4;
   }
   
@@ -489,7 +485,7 @@ app.post('/check-subscription-and-update', async (req, res) => {
                 hasCheckedSubscription2: user.hasCheckedSubscription2,
                 hasCheckedSubscription3: user.hasCheckedSubscription3,
                 hasCheckedSubscription4: user.hasCheckedSubscription4,
-                hasNicknameBonus: user.hasNicknameBonus,
+                hasNicknameBonus: user.hasNicknameBonus
             });
         } else {
             res.status(404).json({ success: false, message: 'Пользователь не найден.' });
@@ -499,8 +495,6 @@ app.post('/check-subscription-and-update', async (req, res) => {
         res.status(500).json({ error: 'Ошибка сервера' });
     }
 });
-
-  
 
 app.post('/get-referred-users', async (req, res) => {
   const { referralCode } = req.body;
@@ -517,10 +511,6 @@ app.post('/get-referred-users', async (req, res) => {
     res.status(500).json({ success: false, message: 'Ошибка при получении данных о рефералах.' });
   }
 });
-
-
-  
-  
 
 app.post('/get-coins', async (req, res) => {
   const { userId } = req.body;
@@ -810,7 +800,7 @@ bot.onText(/\/start(?: (.+))?/, async (msg, match) => {
       }
     }
 
-    const appUrl = `https://resilient-madeleine-9ff7c2.netlify.app/?userId=${userId}`;
+    const appUrl = `https://octies.org/?userId=${userId}`;
     const channelUrl = `https://t.me/octies_channel`;
 
     const imagePath = path.join(__dirname, 'images', 'Octies_bot_logo.png');
