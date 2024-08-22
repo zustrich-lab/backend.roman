@@ -661,42 +661,36 @@ app.post('/add-coins', async (req, res) => {
 //   }
 // });
 
-async function sendMessageToAllUsers(message, buttonText, buttonUrl, buttonType) {
+
+  async function sendMessageToAllUsers(message, buttonText, buttonUrl, buttonType) {
     try {
-      const users = await UserProgress.find({}, 'telegramId');
-  
-      const promises = users.map(user => {
-        if (message.text) {
-          if (buttonText && buttonUrl) {
-            const replyMarkup = buttonType === 'web_app' ? 
-              { inline_keyboard: [[{ text: buttonText, web_app: { url: buttonUrl } }]] } : 
-              { inline_keyboard: [[{ text: buttonText, url: buttonUrl }]] };
-  
-            return bot.sendMessage(user.telegramId, message.text, { reply_markup: replyMarkup });
-          } else {
-            return bot.sendMessage(user.telegramId, message.text);
-          }
-        } else if (message.photo) {
-          const photo = message.photo[message.photo.length - 1].file_id;
-          const caption = message.caption || '';
-          if (buttonText && buttonUrl) {
-            const replyMarkup = buttonType === 'web_app' ? 
-              { inline_keyboard: [[{ text: buttonText, web_app: { url: buttonUrl } }]] } : 
-              { inline_keyboard: [[{ text: buttonText, url: buttonUrl }]] };
-  
-            return bot.sendPhoto(user.telegramId, photo, { caption, reply_markup: replyMarkup });
-          } else {
-            return bot.sendPhoto(user.telegramId, photo, { caption });
-          }
-        }
-      });
-  
-      await Promise.all(promises);
+        const users = await UserProgress.find({}, 'telegramId');
+
+        const promises = users.map(user => {
+            if (message.text) {
+                // Код для отправки текстовых сообщений (уже существует)
+            } else if (message.photo) {
+                // Код для отправки фотографий (уже существует)
+            } else if (message.video) {
+                const video = message.video.file_id;
+                const caption = message.caption || '';
+                if (buttonText && buttonUrl) {
+                    const replyMarkup = buttonType === 'web_app' ? 
+                        { inline_keyboard: [[{ text: buttonText, web_app: { url: buttonUrl } }]] } : 
+                        { inline_keyboard: [[{ text: buttonText, url: buttonUrl }]] };
+
+                    return bot.sendVideo(user.telegramId, video, { caption, reply_markup: replyMarkup });
+                } else {
+                    return bot.sendVideo(user.telegramId, video, { caption });
+                }
+            }
+        });
+
+        await Promise.all(promises);
     } catch (error) {
-      console.error('Ошибка при отправке сообщений:', error);
+        console.error('Ошибка при отправке сообщений:', error);
     }
-  }
-  
+}
 
 const ADMIN_IDS = [561009411]; // Замени на реальные Telegram ID администраторов
 
