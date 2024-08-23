@@ -660,56 +660,55 @@ app.post('/add-coins', async (req, res) => {
 //   }
 // });
 
-async function sendMessageToAllUsers(message, buttonText, buttonUrl, buttonType) {
+async function sendMessageToAllUsers(message, buttonText) {
   try {
-      const users = await UserProgress.find({}, 'telegramId');
+    const users = await UserProgress.find({}, 'telegramId');
 
-      const promises = users.map(user => {
-          if (message.text) {
-              // Отправка текстового сообщения
-              if (buttonText && buttonUrl) {
-                  const replyMarkup = buttonType === 'web_app' ? 
-                      { inline_keyboard: [[{ text: buttonText, web_app: { url: buttonUrl } }]] } : 
-                      { inline_keyboard: [[{ text: buttonText, url: buttonUrl }]] };
+    const promises = users.map(user => {
+      if (message.text) {
+        // Отправка текстового сообщения
+        const replyMarkup = {
+          inline_keyboard: [[{ text: buttonText, callback_data: 'start_command' }]]
+        };
+        return bot.sendMessage(user.telegramId, message.text, { reply_markup: replyMarkup });
+      } else if (message.photo) {
+        // Отправка фото
+        const photo = message.photo[message.photo.length - 1].file_id;
+        const caption = message.caption || '';
+        const replyMarkup = {
+          inline_keyboard: [[{ text: buttonText, callback_data: 'start_command' }]]
+        };
+        return bot.sendPhoto(user.telegramId, photo, { caption, reply_markup: replyMarkup });
+      } else if (message.video) {
+        // Отправка видео
+        const video = message.video.file_id;
+        const caption = message.caption || '';
+        const replyMarkup = {
+          inline_keyboard: [[{ text: buttonText, callback_data: 'start_command' }]]
+        };
+        return bot.sendVideo(user.telegramId, video, { caption, reply_markup: replyMarkup });
+      }
+    });
 
-                  return bot.sendMessage(user.telegramId, message.text, { reply_markup: replyMarkup });
-              } else {
-                  return bot.sendMessage(user.telegramId, message.text);
-              }
-          } else if (message.photo) {
-              // Отправка фото
-              const photo = message.photo[message.photo.length - 1].file_id;
-              const caption = message.caption || '';
-              if (buttonText && buttonUrl) {
-                  const replyMarkup = buttonType === 'web_app' ? 
-                      { inline_keyboard: [[{ text: buttonText, web_app: { url: buttonUrl } }]] } : 
-                      { inline_keyboard: [[{ text: buttonText, url: buttonUrl }]] };
-
-                  return bot.sendPhoto(user.telegramId, photo, { caption, reply_markup: replyMarkup });
-              } else {
-                  return bot.sendPhoto(user.telegramId, photo, { caption });
-              }
-          } else if (message.video) {
-              // Отправка видео
-              const video = message.video.file_id;
-              const caption = message.caption || '';
-              if (buttonText && buttonUrl) {
-                  const replyMarkup = buttonType === 'web_app' ? 
-                      { inline_keyboard: [[{ text: buttonText, web_app: { url: buttonUrl } }]] } : 
-                      { inline_keyboard: [[{ text: buttonText, url: buttonUrl }]] };
-
-                  return bot.sendVideo(user.telegramId, video, { caption, reply_markup: replyMarkup });
-              } else {
-                  return bot.sendVideo(user.telegramId, video, { caption });
-              }
-          }
-      });
-
-      await Promise.all(promises);
+    await Promise.all(promises);
   } catch (error) {
-      console.error('Ошибка при отправке сообщений:', error);
+    console.error('Ошибка при отправке сообщений:', error);
   }
 }
+
+bot.on('callback_query', async (callbackQuery) => {
+  const message = callbackQuery.message;
+  const userId = callbackQuery.from.id;
+
+  if (callbackQuery.data === 'start_command') {
+    bot.sendMessage(userId, 'Вы нажали кнопку, запускаем команду /start...');
+    // Вызываем команду /start, как если бы пользователь её ввел
+    bot.emit('text', { chat: { id: userId }, from: { id: userId }, text: '/start' });
+  }
+
+  bot.answerCallbackQuery(callbackQuery.id);
+});
+
 
 const ADMIN_IDS = [561009411]; // Замени на реальные Telegram ID администраторов
 
