@@ -702,12 +702,38 @@ bot.on('callback_query', async (callbackQuery) => {
 
   if (callbackQuery.data === 'start_command') {
     bot.sendMessage(userId, 'Вы нажали кнопку, запускаем команду /start...');
-    // Вызываем команду /start, как если бы пользователь её ввел
-    bot.emit('text', { chat: { id: userId }, from: { id: userId }, text: '/start' });
+    
+    // Вызовите функцию, которая отвечает за команду /start
+    handleStartCommand(userId, message.chat.id);
   }
 
   bot.answerCallbackQuery(callbackQuery.id);
 });
+
+async function handleStartCommand(userId, chatId) {
+  // Ваш код для обработки команды /start
+  const appUrl = `https://octies.org/?userId=${userId}`;
+  const channelUrl = `https://t.me/octies_channel`;
+
+  try {
+    const imagePath = path.join(__dirname, 'images', 'Octies_bot_logo.png');
+    
+    await bot.sendPhoto(chatId, imagePath, {
+      caption: "How cool is your Telegram profile? Check your rating and receive rewards 🐙",
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: "Let's Go!", web_app: { url: appUrl } },
+            { text: 'Join OCTIES Community', url: channelUrl }
+          ]
+        ]
+      }
+    });
+  } catch (error) {
+    console.error('Ошибка при отправке фото:', error);
+    bot.sendMessage(chatId, 'Произошла ошибка при отправке фото.');
+  }
+}
 
 
 const ADMIN_IDS = [561009411]; // Замени на реальные Telegram ID администраторов
