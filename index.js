@@ -474,11 +474,12 @@ app.post('/check-subscription-and-update', async (req, res) => {
             
 
             // Проверка подписки на четвертый канал
-            if (user.hasTelegramPremium) {
-              updatedCoins += 500; // Добавляем награду за подписку на четвертый канал
-              user.hasTelegramPremium = true;
-            } 
-          }
+           
+              if (user.hasTelegramPremium) {
+                updatedCoins += 500; // Добавляем награду за подписку на четвертый канал
+                user.hasTelegramPremium = true;
+              } 
+          
 
             user.coins = updatedCoins;
             user.coinsSub = updatedCoinsSub;
