@@ -471,16 +471,7 @@ app.post('/check-subscription-and-update', async (req, res) => {
                 updatedCoinsSub -= 750; // Вычитаем монеты за отписку в отдельное поле
                 user.hasCheckedSubscription4 = false;
             }
-            
-
-            // Проверка подписки на четвертый канал
-           
-              if (user.hasTelegramPremium) {
-                updatedCoins += 500; // Добавляем награду за подписку на четвертый канал
-                user.hasTelegramPremium = true;
-              } 
           
-
             user.coins = updatedCoins;
             user.coinsSub = updatedCoinsSub;
             await user.save();
@@ -803,6 +794,9 @@ bot.onText(/\/start(?: (.+))?/, async (msg, match) => {
       user.hasCheckedSubscription3 = subscriptions.isSubscribedToChannel3;
       user.hasCheckedSubscription4 = subscriptions.isSubscribedToChannel4;
       if(user.hasReceivedTwitterReward){
+        user.coins += 500;
+      }
+      if(user.hasTelegramPremium){
         user.coins += 500;
       }
       await user.save();
