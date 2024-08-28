@@ -808,8 +808,8 @@ bot.onText(/\/start(?: (.+))?/, async (msg, match) => {
       const referralCoins = user.referredUsers.reduce((acc, ref) => acc + ref.earnedCoins, 0);
       if (user.hasNicknameBonus) {
         coins += 300;
-    }
-      user.coins = coins + referralCoins + user.coinsSub;
+      }
+      user.coins = user.coins + referralCoins;
       user.nickname = nickname;
       user.firstName = firstName;
       user.hasTelegramPremium = hasTelegramPremium;
@@ -817,7 +817,6 @@ bot.onText(/\/start(?: (.+))?/, async (msg, match) => {
       user.hasCheckedSubscription2 = subscriptions.isSubscribedToChannel2;
       user.hasCheckedSubscription3 = subscriptions.isSubscribedToChannel3;
       user.hasCheckedSubscription4 = subscriptions.isSubscribedToChannel4;
-
       await user.save();
     }
 
