@@ -7,6 +7,7 @@ const TelegramBot = require('node-telegram-bot-api');
 const path = require('path');
 const UserProgress = require('./models/userProgress');
 //const GlobalTransactionCounter = require('./models/GlobalTransactionCounter');
+MONGODB_URL = 'mongodb+srv://nazarlymar152:Nazar5002Nazar@cluster0.ht9jvso.mongodb.net/Clicker_bot?retryWrites=true&w=majority&appName=Cluster0';
 const axios = require('axios');
 const app = express();
 const port = process.env.PORT || 3001;
@@ -24,7 +25,7 @@ app.use(bodyParser.json());
 app.use(express.json());
 
 
-mongoose.connect(process.env.MONGODB_URL, { useNewUrlParser: true, useUnifiedTopology: true })
+mongoose.connect(MONGODB_URL,)
     .then(() => console.log('MongoDB connected'))
     .catch(err => console.log(err));
 
