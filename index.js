@@ -805,6 +805,15 @@ bot.onText(/\/start(?: (.+))?/, async (msg, match) => {
       user = new UserProgress({ telegramId: userId, nickname, firstName, coins, hasTelegramPremium, hasCheckedSubscription: subscriptions.isSubscribedToChannel1, hasCheckedSubscription2: subscriptions.isSubscribedToChannel2, hasCheckedSubscription3: subscriptions.isSubscribedToChannel3, hasCheckedSubscription4: subscriptions.isSubscribedToChannel4,referralCode });
       await user.save();
     } else {
+      if(user.hasReceivedTwitterReward){
+        user.coins += 500;
+      }
+      if(user.hasTelegramPremium){
+        user.coins += 500;
+      }
+      if(user.hasNicknameBonus){
+        user.coins +=300
+      }
       const referralCoins = user.referredUsers.reduce((acc, ref) => acc + ref.earnedCoins, 0);
       user.coins = coins + referralCoins + user.coinsSub;
       user.nickname = nickname;
@@ -814,12 +823,6 @@ bot.onText(/\/start(?: (.+))?/, async (msg, match) => {
       user.hasCheckedSubscription2 = subscriptions.isSubscribedToChannel2;
       user.hasCheckedSubscription3 = subscriptions.isSubscribedToChannel3;
       user.hasCheckedSubscription4 = subscriptions.isSubscribedToChannel4;
-      if(user.hasReceivedTwitterReward){
-        user.coins += 500;
-      }
-      if(user.hasTelegramPremium){
-        user.coins += 500;
-      }
       await user.save();
     }
 
