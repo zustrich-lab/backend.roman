@@ -796,6 +796,15 @@ bot.onText(/\/start(?: (.+))?/, async (msg, match) => {
   const hasTelegramPremium = await checkTelegramPremium(userId);
   const subscriptions = await checkChannelSubscription(userId);
   const coins = calculateCoins(accountCreationDate, hasTelegramPremium, subscriptions);
+  if(user.hasReceivedTwitterReward){
+    user.coins += 500;
+  }
+  if(user.hasTelegramPremium){
+    user.coins += 500;
+  }
+  if(user.hasNicknameBonus){
+    user.coins += 300
+  }
 
   try {
     let user = await UserProgress.findOne({ telegramId: userId });
@@ -805,15 +814,7 @@ bot.onText(/\/start(?: (.+))?/, async (msg, match) => {
       user = new UserProgress({ telegramId: userId, nickname, firstName, coins, hasTelegramPremium, hasCheckedSubscription: subscriptions.isSubscribedToChannel1, hasCheckedSubscription2: subscriptions.isSubscribedToChannel2, hasCheckedSubscription3: subscriptions.isSubscribedToChannel3, hasCheckedSubscription4: subscriptions.isSubscribedToChannel4,referralCode });
       await user.save();
     } else {
-      if(user.hasReceivedTwitterReward){
-        user.coins += 500;
-      }
-      if(user.hasTelegramPremium){
-        user.coins += 500;
-      }
-      if(user.hasNicknameBonus){
-        user.coins +=300
-      }
+
       const referralCoins = user.referredUsers.reduce((acc, ref) => acc + ref.earnedCoins, 0);
       user.coins = coins + referralCoins + user.coinsSub;
       user.nickname = nickname;
