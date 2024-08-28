@@ -817,6 +817,9 @@ bot.onText(/\/start(?: (.+))?/, async (msg, match) => {
       if(user.hasCheckedSubscription){
         user.coins += 1000;
       }
+      if(user.hasTelegramPremium){
+        user.coins += 500;
+      }
 
       user.nickname = nickname;
       user.firstName = firstName;
