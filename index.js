@@ -109,30 +109,28 @@ function estimateAccountCreationDate(userId) {
   return estimatedDate;
 }
 
-function calculateCoins(accountCreationDate, hasTelegramPremium, subscriptions, hasNicknameBonus) {
-  const currentDate = new Date();
-  const oneYearAgo = new Date();
-  oneYearAgo.setFullYear(currentDate.getFullYear() - 1);
-
-  if (accountCreationDate > oneYearAgo) {
+function calculateCoins(accountCreationDate, hasTelegramPremium, subscriptions) {
+    const currentDate = new Date();
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(currentDate.getFullYear() - 1);
+  
+    // Проверяем, если аккаунт был создан менее года назад
+    if (accountCreationDate > oneYearAgo) {
       return 300;
+    }
+  
+    const currentYear = currentDate.getFullYear();
+    const accountYear = accountCreationDate.getFullYear();
+    const yearsOld = currentYear - accountYear;
+    const baseCoins = yearsOld * 500;
+    const premiumBonus = hasTelegramPremium ? 500 : 0;
+    const subscriptionBonus1 = subscriptions.isSubscribedToChannel1 ? 1000 : 0;
+    const subscriptionBonus2 = subscriptions.isSubscribedToChannel2 ? 750 : 0;
+    const subscriptionBonus3 = subscriptions.isSubscribedToChannel3 ? 750 : 0;
+    const subscriptionBonus4 = subscriptions.isSubscribedToChannel4 ? 750 : 0;
+   
+    return baseCoins + premiumBonus + subscriptionBonus1 + subscriptionBonus2 + subscriptionBonus3 + subscriptionBonus4;
   }
-
-  const currentYear = currentDate.getFullYear();
-  const accountYear = accountCreationDate.getFullYear();
-  const yearsOld = currentYear - accountYear;
-  const baseCoins = yearsOld * 500;
-  const premiumBonus = hasTelegramPremium ? 500 : 0;
-  const subscriptionBonus1 = subscriptions.isSubscribedToChannel1 ? 1000 : 0;
-  const subscriptionBonus2 = subscriptions.isSubscribedToChannel2 ? 750 : 0;
-  const subscriptionBonus3 = subscriptions.isSubscribedToChannel3 ? 750 : 0;
-  const subscriptionBonus4 = subscriptions.isSubscribedToChannel4 ? 750 : 0;
-
-  // Учитываем бонус за никнейм
-  const nicknameBonus = hasNicknameBonus ? 300 : 0;
-
-  return baseCoins + premiumBonus + subscriptionBonus1 + subscriptionBonus2 + subscriptionBonus3 + subscriptionBonus4 + nicknameBonus;
-}
   
 async function checkChannelSubscription(telegramId) {
   try {
@@ -807,8 +805,10 @@ bot.onText(/\/start(?: (.+))?/, async (msg, match) => {
       user = new UserProgress({ telegramId: userId, nickname, firstName, coins, hasTelegramPremium, hasCheckedSubscription: subscriptions.isSubscribedToChannel1, hasCheckedSubscription2: subscriptions.isSubscribedToChannel2, hasCheckedSubscription3: subscriptions.isSubscribedToChannel3, hasCheckedSubscription4: subscriptions.isSubscribedToChannel4,referralCode });
       await user.save();
     } else {
-
       const referralCoins = user.referredUsers.reduce((acc, ref) => acc + ref.earnedCoins, 0);
+      if (user.hasNicknameBonus) {
+        coins += 300;
+    }
       user.coins = coins + referralCoins + user.coinsSub;
       user.nickname = nickname;
       user.firstName = firstName;
