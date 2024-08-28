@@ -806,9 +806,6 @@ bot.onText(/\/start(?: (.+))?/, async (msg, match) => {
       await user.save();
     } else {
       const referralCoins = user.referredUsers.reduce((acc, ref) => acc + ref.earnedCoins, 0);
-      if (user.hasNicknameBonus) {
-        coins += 300;
-      }
       user.coins = user.coins + referralCoins;
       user.nickname = nickname;
       user.firstName = firstName;
