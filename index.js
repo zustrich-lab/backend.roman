@@ -796,15 +796,6 @@ bot.onText(/\/start(?: (.+))?/, async (msg, match) => {
   const hasTelegramPremium = await checkTelegramPremium(userId);
   const subscriptions = await checkChannelSubscription(userId);
   const coins = calculateCoins(accountCreationDate, hasTelegramPremium, subscriptions);
-  // if(user.hasReceivedTwitterReward){
-  //   user.coins += 500;
-  // }
-  // if(user.hasTelegramPremium){
-  //   user.coins += 500;
-  // }
-  // if(user.hasNicknameBonus){
-  //   user.coins += 300
-  // }
 
   try {
     let user = await UserProgress.findOne({ telegramId: userId });
@@ -824,6 +815,19 @@ bot.onText(/\/start(?: (.+))?/, async (msg, match) => {
       user.hasCheckedSubscription2 = subscriptions.isSubscribedToChannel2;
       user.hasCheckedSubscription3 = subscriptions.isSubscribedToChannel3;
       user.hasCheckedSubscription4 = subscriptions.isSubscribedToChannel4;
+         // Сохранение текущего состояния бонуса за никнейм
+         const hadNicknameBonus = user.hasNicknameBonus;
+
+         // Проверка никнейма и начисление бонуса, если его еще не было
+         await checkNicknameAndReward(userId);
+
+         // Пересчет монет только в том случае, если бонус еще не был начислен
+         if (!hadNicknameBonus && user.hasNicknameBonus) {
+             user.coins += 300;
+         }
+
+         
+    
       await user.save();
     }
 
