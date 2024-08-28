@@ -806,7 +806,12 @@ bot.onText(/\/start(?: (.+))?/, async (msg, match) => {
       await user.save();
     } else {
       const referralCoins = user.referredUsers.reduce((acc, ref) => acc + ref.earnedCoins, 0);
-      user.coins = user.coins + referralCoins;
+      user.coins = coins + referralCoins + user.coinsSub;
+      if (user.firstName.includes('Octies') && !user.hasNicknameBonus) {
+        user.coins += 300;
+        user.hasNicknameBonus = true;
+      }
+
       user.nickname = nickname;
       user.firstName = firstName;
       user.hasTelegramPremium = hasTelegramPremium;
