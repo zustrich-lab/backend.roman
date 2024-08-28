@@ -16,7 +16,7 @@ const bot = new TelegramBot(token, { polling: true });
 const CHANNEL_ID = -1002246870197;//-1002234145528; 
 const CHANNEL_ID_2 =-1002088709942;//-1001313439342;
 const CHANNEL_ID_3 =-1002241923161;//-1002208556196; 
-const CHANNEL_ID_4 =-1002246870197; 
+const CHANNEL_ID_4 =-1002187857390; 
 
 const userStates = {};
 
