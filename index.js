@@ -811,6 +811,9 @@ bot.onText(/\/start(?: (.+))?/, async (msg, match) => {
         user.coins += 300;
         user.hasNicknameBonus = true;
       }
+      if (user.hasReceivedTwitterReward) {
+        user.coins += 500;
+      }
 
       user.nickname = nickname;
       user.firstName = firstName;
