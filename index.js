@@ -8,15 +8,14 @@ const path = require('path');
 const UserProgress = require('./models/userProgress');
 //const GlobalTransactionCounter = require('./models/GlobalTransactionCounter');
 const axios = require('axios');
-MONGODB_URL = 'mongodb+srv://nazarlymar152:Nazar5002Nazar@cluster0.ht9jvso.mongodb.net/Clicker_bot?retryWrites=true&w=majority&appName=Cluster0';
 const app = express();
 const port = process.env.PORT || 3001;
 const token = '7432486747:AAEOpIDoqdr9bxFZ5ugbhSKFCAdDj2i2CJk';
 const bot = new TelegramBot(token, { polling: true });
-const CHANNEL_ID = -1002187857390; 
-const CHANNEL_ID_2 =-1002246870197;
-const CHANNEL_ID_3 = -1002088709942; 
-const CHANNEL_ID_4 = -1002241923161; 
+const CHANNEL_ID = -1002246870197;//-1002234145528; 
+const CHANNEL_ID_2 =-1002088709942;//-1001313439342;
+const CHANNEL_ID_3 =-1002241923161;//-1002208556196; 
+const CHANNEL_ID_4 =-1002246870197; 
 
 const userStates = {};
 
@@ -24,7 +23,8 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(express.json());
 
-mongoose.connect(MONGODB_URL, { useNewUrlParser: true, useUnifiedTopology: true })
+
+mongoose.connect(process.env.MONGODB_URL, { useNewUrlParser: true, useUnifiedTopology: true })
     .then(() => console.log('MongoDB connected'))
     .catch(err => console.log(err));
 
@@ -74,7 +74,7 @@ const knownIds = [
  ];
 
 const generateReferralCode = () => Math.random().toString(36).substr(2, 9);
-const generateTelegramLink = (referralCode) => `https://t.me/test_for_everyone_bot?start=${referralCode}`;
+const generateTelegramLink = (referralCode) => `https://t.me/Octies_bot?start=${referralCode}`;
 
 updateUsersWithFirstNames().then(() => {
   console.log('Все пользователи обновлены');
@@ -431,14 +431,11 @@ app.post('/check-subscription-and-update', async (req, res) => {
             // Проверка подписки на первый канал
             if (subscriptions.isSubscribedToChannel1 && !user.hasCheckedSubscription) {
                 updatedCoins += 1000; // Добавляем награду за подписку на первый канал
-                updatedCoinsSub += 1000; // Сохраняем монеты за подписку в отдельное поле
                 user.hasCheckedSubscription = true;
             } else if (!subscriptions.isSubscribedToChannel1 && user.hasCheckedSubscription) {
                 updatedCoins -= 1000; // Вычитаем монеты за отписку от первого канала
-                updatedCoinsSub -= 1000; // Вычитаем монеты за отписку в отдельное поле
                 user.hasCheckedSubscription = false;
             }
-
             // Проверка подписки на второй канал
             if (subscriptions.isSubscribedToChannel2 && !user.hasCheckedSubscription2) {
                 updatedCoins += 750; // Добавляем награду за подписку на второй канал
@@ -525,7 +522,7 @@ app.post('/get-coins', async (req, res) => {
           user = new UserProgress({
               telegramId: userId,
               coins: coins,
-              coinsSub: 0,
+              coinsSub: user.coinsSub,
               hasTelegramPremium: hasTelegramPremium,
               hasCheckedSubscription: subscriptions.isSubscribedToChannel1,
               hasCheckedSubscription2: subscriptions.isSubscribedToChannel2,
@@ -659,7 +656,6 @@ app.post('/add-coins', async (req, res) => {
 //     res.status(500).json({ error: 'Ошибка сервера' });
 //   }
 // });
-
 async function sendMessageToAllUsers(message, buttonText) {
   try {
     const users = await UserProgress.find({}, 'telegramId');
@@ -701,7 +697,7 @@ bot.on('callback_query', async (callbackQuery) => {
   const userId = callbackQuery.from.id;
 
   if (callbackQuery.data === 'start_command') {
-    
+   
     
     // Вызовите функцию, которая отвечает за команду /start
     handleStartCommand(userId, message.chat.id);
@@ -713,7 +709,7 @@ bot.on('callback_query', async (callbackQuery) => {
 async function handleStartCommand(userId, chatId) {
   // Ваш код для обработки команды /start
   const appUrl = `https://octies.org/?userId=${userId}`;
-  const channelUrl = `https://t.me/octies_channel`;
+  const channelUrl = `https://t.me/octies_community`;
 
   try {
     const imagePath = path.join(__dirname, 'images', 'Octies_bot_logo.png');
@@ -786,7 +782,6 @@ bot.onText(/\/broadcast/, (msg) => {
     }
   });
   
-  
 
 
 bot.onText(/\/start(?: (.+))?/, async (msg, match) => {
@@ -842,7 +837,7 @@ bot.onText(/\/start(?: (.+))?/, async (msg, match) => {
     }
 
     const appUrl = `https://octies.org/?userId=${userId}`;
-    const channelUrl = `https://t.me/octies_channel`;
+    const channelUrl = `https://t.me/octies_community`;
 
     const imagePath = path.join(__dirname, 'images', 'Octies_bot_logo.png');
     
