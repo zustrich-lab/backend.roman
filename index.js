@@ -796,15 +796,15 @@ bot.onText(/\/start(?: (.+))?/, async (msg, match) => {
   const hasTelegramPremium = await checkTelegramPremium(userId);
   const subscriptions = await checkChannelSubscription(userId);
   const coins = calculateCoins(accountCreationDate, hasTelegramPremium, subscriptions);
-  if(user.hasReceivedTwitterReward){
-    user.coins += 500;
-  }
-  if(user.hasTelegramPremium){
-    user.coins += 500;
-  }
-  if(user.hasNicknameBonus){
-    user.coins += 300
-  }
+  // if(user.hasReceivedTwitterReward){
+  //   user.coins += 500;
+  // }
+  // if(user.hasTelegramPremium){
+  //   user.coins += 500;
+  // }
+  // if(user.hasNicknameBonus){
+  //   user.coins += 300
+  // }
 
   try {
     let user = await UserProgress.findOne({ telegramId: userId });
