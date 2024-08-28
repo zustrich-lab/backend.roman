@@ -227,7 +227,6 @@ const checkNicknameAndReward = async (userId) => {
       } else {
           console.log(`Нет изменений в нике или бонус уже был обработан.`);
       }
-
       // Сбрасываем флаг после завершения обработки
       user.processingNicknameBonus = false;
       await user.save();
