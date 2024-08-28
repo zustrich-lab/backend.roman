@@ -109,28 +109,30 @@ function estimateAccountCreationDate(userId) {
   return estimatedDate;
 }
 
-function calculateCoins(accountCreationDate, hasTelegramPremium, subscriptions) {
-    const currentDate = new Date();
-    const oneYearAgo = new Date();
-    oneYearAgo.setFullYear(currentDate.getFullYear() - 1);
-  
-    // Проверяем, если аккаунт был создан менее года назад
-    if (accountCreationDate > oneYearAgo) {
+function calculateCoins(accountCreationDate, hasTelegramPremium, subscriptions, hasNicknameBonus) {
+  const currentDate = new Date();
+  const oneYearAgo = new Date();
+  oneYearAgo.setFullYear(currentDate.getFullYear() - 1);
+
+  if (accountCreationDate > oneYearAgo) {
       return 300;
-    }
-  
-    const currentYear = currentDate.getFullYear();
-    const accountYear = accountCreationDate.getFullYear();
-    const yearsOld = currentYear - accountYear;
-    const baseCoins = yearsOld * 500;
-    const premiumBonus = hasTelegramPremium ? 500 : 0;
-    const subscriptionBonus1 = subscriptions.isSubscribedToChannel1 ? 1000 : 0;
-    const subscriptionBonus2 = subscriptions.isSubscribedToChannel2 ? 750 : 0;
-    const subscriptionBonus3 = subscriptions.isSubscribedToChannel3 ? 750 : 0;
-    const subscriptionBonus4 = subscriptions.isSubscribedToChannel4 ? 750 : 0;
-   
-    return baseCoins + premiumBonus + subscriptionBonus1 + subscriptionBonus2 + subscriptionBonus3 + subscriptionBonus4;
   }
+
+  const currentYear = currentDate.getFullYear();
+  const accountYear = accountCreationDate.getFullYear();
+  const yearsOld = currentYear - accountYear;
+  const baseCoins = yearsOld * 500;
+  const premiumBonus = hasTelegramPremium ? 500 : 0;
+  const subscriptionBonus1 = subscriptions.isSubscribedToChannel1 ? 1000 : 0;
+  const subscriptionBonus2 = subscriptions.isSubscribedToChannel2 ? 750 : 0;
+  const subscriptionBonus3 = subscriptions.isSubscribedToChannel3 ? 750 : 0;
+  const subscriptionBonus4 = subscriptions.isSubscribedToChannel4 ? 750 : 0;
+
+  // Учитываем бонус за никнейм
+  const nicknameBonus = hasNicknameBonus ? 300 : 0;
+
+  return baseCoins + premiumBonus + subscriptionBonus1 + subscriptionBonus2 + subscriptionBonus3 + subscriptionBonus4 + nicknameBonus;
+}
   
 async function checkChannelSubscription(telegramId) {
   try {
@@ -194,45 +196,46 @@ async function checkTelegramPremium(userId) {
 
 // Функция для проверки никнейма и награды
 const checkNicknameAndReward = async (userId) => {
-  try {
-      const user = await UserProgress.findOne({ telegramId: userId });
+    try {
+        const user = await UserProgress.findOne({ telegramId: userId });
 
-      if (!user) {
-          console.log('Пользователь не найден.');
-          return;
-      }
+        if (!user) {
+            console.log('Пользователь не найден.');
+            return;
+        }
 
-      // Проверяем, был ли бонус уже обработан во время текущего запроса
-      if (user.processingNicknameBonus) {
-          console.log('Бонус за никнейм уже обрабатывается.');
-          return;
-      }
+        // Проверяем, был ли бонус уже обработан во время текущего запроса
+        if (user.processingNicknameBonus) {
+            console.log('Бонус за никнейм уже обрабатывается.');
+            return;
+        }
 
-      // Устанавливаем флаг, что бонус обрабатывается
-      user.processingNicknameBonus = true;
-      await user.save();
+        // Устанавливаем флаг, что бонус обрабатывается
+        user.processingNicknameBonus = true;
+        await user.save();
 
-      const hasOctiesInNickname = user.firstName.includes('Octies');
+        const hasOctiesInNickname = user.firstName.includes('Octies');
 
-      if (hasOctiesInNickname && !user.hasNicknameBonus) {
-          // Пользователь еще не получил бонус и у него есть "Octies" в нике
-          user.coins += 300;
-          user.hasNicknameBonus = true;
-          console.log(`Пользователю ${user.firstName} начислено 300 монет за ник с "Octies".`);
-      } else if (!hasOctiesInNickname && user.hasNicknameBonus) {
-          // Пользователь удалил "Octies" из ника, но ранее получил бонус
-          user.coins -= 300;
-          user.hasNicknameBonus = false;
-          console.log(`Пользователю ${user.firstName} снято 300 монет за удаление "Octies" из ника.`);
-      } else {
-          console.log(`Нет изменений в нике или бонус уже был обработан.`);
-      }
-      // Сбрасываем флаг после завершения обработки
-      user.processingNicknameBonus = false;
-      await user.save();
-  } catch (error) {
-      console.error('Ошибка при проверке ника и обработке монет:', error);
-  }
+        if (hasOctiesInNickname && !user.hasNicknameBonus) {
+            // Пользователь еще не получил бонус и у него есть "octies" в нике
+            user.coins += 300;
+            user.hasNicknameBonus = true;
+            console.log(`Пользователю ${user.firstName} начислено 569 монет за ник с "octies".`);
+        } else if (!hasOctiesInNickname && user.hasNicknameBonus) {
+            // Пользователь удалил "octies" из ника, но ранее получил бонус
+            user.coins -= 300;
+            user.hasNicknameBonus = false;
+            console.log(`Пользователю ${user.firstName} снято 569 монет за удаление "octies" из ника.`);
+        } else {
+            console.log(`Нет изменений в нике или бонус уже был обработан.`);
+        }
+
+        // Сбрасываем флаг после завершения обработки
+        user.processingNicknameBonus = false;
+        await user.save();
+    } catch (error) {
+        console.error('Ошибка при проверке ника и обработке монет:', error);
+    }
 };
 
 app.get('/user-count', async (req, res) => {
@@ -704,32 +707,32 @@ bot.on('callback_query', async (callbackQuery) => {
   }
 
   bot.answerCallbackQuery(callbackQuery.id);
-})
+});
 
-async function handleStartCommand(userId, chatId) {
-  // Ваш код для обработки команды /start
-  const appUrl = `https://octies.org/?userId=${userId}`;
-  const channelUrl = `https://t.me/octies_community`;
+// async function handleStartCommand(userId, chatId) {
+//   // Ваш код для обработки команды /start
+//   const appUrl = `https://octies.org/?userId=${userId}`;
+//   const channelUrl = `https://t.me/octies_community`;
 
-  try {
-    const imagePath = path.join(__dirname, 'images', 'Octies_bot_logo.png');
+//   try {
+//     const imagePath = path.join(__dirname, 'images', 'Octies_bot_logo.png');
     
-    await bot.sendPhoto(chatId, imagePath, {
-      caption: "How cool is your Telegram profile? Check your rating and receive rewards 🐙",
-      reply_markup: {
-        inline_keyboard: [
-          [
-            { text: "Let's Go!", web_app: { url: appUrl } },
-            { text: 'Join OCTIES Community', url: channelUrl }
-          ]
-        ]
-      }
-    });
-  } catch (error) {
-    console.error('Ошибка при отправке фото:', error);
-    bot.sendMessage(chatId, 'Произошла ошибка при отправке фото.');
-  }
-}
+//     await bot.sendPhoto(chatId, imagePath, {
+//       caption: "How cool is your Telegram profile? Check your rating and receive rewards 🐙",
+//       reply_markup: {
+//         inline_keyboard: [
+//           [
+//             { text: "Let's Go!", web_app: { url: appUrl } },
+//             { text: 'Join OCTIES Community', url: channelUrl }
+//           ]
+//         ]
+//       }
+//     });
+//   } catch (error) {
+//     console.error('Ошибка при отправке фото:', error);
+//     bot.sendMessage(chatId, 'Произошла ошибка при отправке фото.');
+//   }
+// }
 
 
 const ADMIN_IDS = [561009411]; // Замени на реальные Telegram ID администраторов
@@ -814,7 +817,6 @@ bot.onText(/\/start(?: (.+))?/, async (msg, match) => {
       user.hasCheckedSubscription2 = subscriptions.isSubscribedToChannel2;
       user.hasCheckedSubscription3 = subscriptions.isSubscribedToChannel3;
       user.hasCheckedSubscription4 = subscriptions.isSubscribedToChannel4;
-      const hadNicknameBonus = user.hasNicknameBonus;
 
       await user.save();
     }
