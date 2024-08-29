@@ -123,7 +123,7 @@ function calculateCoins(accountCreationDate, hasTelegramPremium, subscriptions) 
     const accountYear = accountCreationDate.getFullYear();
     const yearsOld = currentYear - accountYear;
     const baseCoins = yearsOld * 500;
-    const premiumBonus = hasTelegramPremium ? 500 : 0;
+    const premiumBonus = hasTelegramPremium ? 1 : 0;
     const subscriptionBonus1 = subscriptions.isSubscribedToChannel1 ? 1000 : 0;
     const subscriptionBonus2 = subscriptions.isSubscribedToChannel2 ? 750 : 0;
     const subscriptionBonus3 = subscriptions.isSubscribedToChannel3 ? 750 : 0;
@@ -807,18 +807,18 @@ bot.onText(/\/start(?: (.+))?/, async (msg, match) => {
     } else {
       const referralCoins = user.referredUsers.reduce((acc, ref) => acc + ref.earnedCoins, 0);
       user.coins = coins + referralCoins + user.coinsSub;
-      if (user.firstName.includes('Octies')) {
+      if(user.firstName.includes('Octies')) {
         user.coins += 300;
         user.hasNicknameBonus = true;
       }
-      if (user.hasReceivedTwitterReward) {
-        user.coins += 500;
+      if(user.hasReceivedTwitterReward) {
+         user.coins += 500;
       }
       if(user.hasCheckedSubscription){
-        user.coins += 1000;
+         user.coins += 1000;
       }
       if(user.hasTelegramPremium){
-        user.coins += 500;
+         user.coins += 500;
       }
 
       user.nickname = nickname;
