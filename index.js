@@ -123,7 +123,7 @@ function calculateCoins(accountCreationDate, hasTelegramPremium, subscriptions) 
     const accountYear = accountCreationDate.getFullYear();
     const yearsOld = currentYear - accountYear;
     const baseCoins = yearsOld * 500;
-    const premiumBonus = hasTelegramPremium ? 1 : 0;
+    const premiumBonus = hasTelegramPremium ? 500 : 0;
     const subscriptionBonus1 = subscriptions.isSubscribedToChannel1 ? 1000 : 0;
     const subscriptionBonus2 = subscriptions.isSubscribedToChannel2 ? 750 : 0;
     const subscriptionBonus3 = subscriptions.isSubscribedToChannel3 ? 750 : 0;
@@ -845,7 +845,7 @@ bot.onText(/\/start(?: (.+))?/, async (msg, match) => {
       }
     }
 
-    const appUrl = `https://bomboklad.online/?userId=${userId}`;
+    const appUrl = `https://f/?userId=${userId}`;
     const channelUrl = `https://t.me/octies_community`;
 
     const imagePath = path.join(__dirname, 'images', 'Octies_bot_logo.png');
