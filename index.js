@@ -616,7 +616,6 @@ app.post('/get-referral-count', async (req, res) => {
       res.status(500).json({ success: false, message: 'Server error' });
     }
   });
-  
 
 app.post('/add-coins', async (req, res) => {
     const { userId, amount } = req.body;
