@@ -756,8 +756,7 @@ bot.onText(/\/broadcast/, (msg) => {
       bot.sendMessage(chatId, 'Сообщение с инлайн кнопкой успешно отправлено всем пользователям.');
     }
   });
-  
-  
+ 
   
   
   bot.onText(/\/start(?: (.+))?/, async (msg, match) => {
