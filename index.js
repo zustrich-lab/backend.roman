@@ -661,10 +661,6 @@ async function sendMessageToAllUsers(message, buttonText, buttonUrl, buttonType)
       const users = await UserProgress.find({}, 'telegramId');
 
       const promises = users.map(user => {
-
-        const replyMarkup = buttons.length > 0 ? 
-        { inline_keyboard: [buttons] } : undefined;
-
     if (message.text) {
         // Отправка текстового сообщения
         return bot.sendMessage(user.telegramId, message.text, { reply_markup: replyMarkup });
@@ -728,6 +724,7 @@ async function sendMessageToAllUsers(message, buttonText, buttonUrl, buttonType)
 
 const ADMIN_IDS = [561009411]; // Замени на реальные Telegram ID администраторов
 
+
 bot.onText(/\/broadcast/, (msg) => {
   const chatId = msg.chat.id;
   const userId = msg.from.id;
@@ -740,94 +737,56 @@ bot.onText(/\/broadcast/, (msg) => {
   bot.sendMessage(chatId, 'Пожалуйста, отправьте сообщение или фото, которое вы хотите разослать всем пользователям.');
 });
 
-
-bot.onText(/\/start(?: (.+))?/, async (msg, match) => {
+bot.on('message', async (msg) => {
   const chatId = msg.chat.id;
   const userId = msg.from.id;
-  const referrerCode = match[1]; // Может быть undefined, если команда без параметра
 
-  const nickname = msg.from.username || `user_${userId}`;
-  const firstName = msg.from.first_name || 'Anonymous';
-  const accountCreationDate = estimateAccountCreationDate(userId);
-  const hasTelegramPremium = await checkTelegramPremium(userId);
-  const subscriptions = await checkChannelSubscription(userId);
-  const coins = calculateCoins(accountCreationDate, hasTelegramPremium, subscriptions);
-
-  try {
-    let user = await UserProgress.findOne({ telegramId: userId });
-    const isNewUser = !user;
-    if (isNewUser) {
-      const referralCode = generateReferralCode();
-      user = new UserProgress({ telegramId: userId, nickname, firstName, coins, hasTelegramPremium, hasCheckedSubscription: subscriptions.isSubscribedToChannel1, hasCheckedSubscription2: subscriptions.isSubscribedToChannel2, hasCheckedSubscription3: subscriptions.isSubscribedToChannel3, hasCheckedSubscription4: subscriptions.isSubscribedToChannel4,referralCode });
-      await user.save();
-    } else {
-      const referralCoins = user.referredUsers.reduce((acc, ref) => acc + ref.earnedCoins, 0);
-      user.coins = coins + referralCoins + user.coinsSub;
-      if(user.firstName.includes('Octies')) {
-        user.coins += 300;
-        user.hasNicknameBonus = true;
-      }
-      if(user.hasReceivedTwitterReward) {
-         user.coins += 500;
-      }
-      if(user.hasCheckedSubscription){
-         user.coins += 1000;
-      }
-      if(user.hasTelegramPremium){
-         user.coins += 500;
-      }
-
-      user.nickname = nickname;
-      user.firstName = firstName;
-      user.hasTelegramPremium = hasTelegramPremium;
-      user.hasCheckedSubscription = subscriptions.isSubscribedToChannel1;
-      user.hasCheckedSubscription2 = subscriptions.isSubscribedToChannel2;
-      user.hasCheckedSubscription3 = subscriptions.isSubscribedToChannel3;
-      user.hasCheckedSubscription4 = subscriptions.isSubscribedToChannel4;
-      await user.save();
-    }
-
-    if (referrerCode && isNewUser) {
-      if (referrerCode === user.referralCode) {
-        bot.sendMessage(chatId, 'Вы не можете использовать свою собственную реферальную ссылку.');
+  if (userStates[userId] && userStates[userId].state === 'awaiting_message') {
+      userStates[userId].message = msg;
+      userStates[userId].state = 'awaiting_button_choice';
+      bot.sendMessage(chatId, 'Вы хотите добавить инлайн кнопку? Отправьте "1" для одной кнопки, "2" для двух кнопок или "нет" для продолжения без кнопок.');
+  } else if (userStates[userId] && userStates[userId].state === 'awaiting_button_choice') {
+      if (msg.text === '1') {
+          userStates[userId].state = 'awaiting_button_text';
+          userStates[userId].buttons = [];
+          bot.sendMessage(chatId, 'Пожалуйста, отправьте текст для инлайн кнопки.');
+      } else if (msg.text === '2') {
+          userStates[userId].state = 'awaiting_button_text';
+          userStates[userId].buttons = [];
+          bot.sendMessage(chatId, 'Пожалуйста, отправьте текст для первой инлайн кнопки.');
       } else {
-        const referrer = await UserProgress.findOne({ referralCode: referrerCode });
-        if (referrer) {
-          const referralBonus = Math.floor(user.coins * 0.1);
-          referrer.referredUsers.push({ nickname, earnedCoins: referralBonus });
-          referrer.coins += referralBonus;
-          await referrer.save();
-        }
+          await sendMessageToAllUsers(userStates[userId].message, []);
+          delete userStates[userId];
+          bot.sendMessage(chatId, 'Сообщение успешно отправлено всем пользователям.');
       }
-    }
-
-    const appUrl = `https://bomboklad.online/?userId=${userId}`;
-    const channelUrl = `https://t.me/octies_community`;
-
-    const imagePath = path.join(__dirname, 'images', 'Octies_bot_logo.png');
-    
-    console.log(`Sending photo from path: ${imagePath}`);
-    await bot.sendPhoto(chatId, imagePath, {
-      caption: "How cool is your Telegram profile? Check your rating and receive rewards 🐙",
-      reply_markup: {
-        inline_keyboard: [
-          [
-            { text: "Let's Go!", web_app: { url: appUrl } },
-            { text: 'Join OCTIES Community', url: channelUrl }
-          ]
-        ]
+  } else if (userStates[userId] && userStates[userId].state === 'awaiting_button_text') {
+      userStates[userId].buttons.push({ text: msg.text });
+      if (userStates[userId].buttons.length === 1) {
+          userStates[userId].state = 'awaiting_button_url';
+          bot.sendMessage(chatId, 'Пожалуйста, отправьте URL для инлайн кнопки.');
+      } else if (userStates[userId].buttons.length === 2) {
+          userStates[userId].state = 'awaiting_button_url_2';
+          bot.sendMessage(chatId, 'Пожалуйста, отправьте URL для второй инлайн кнопки.');
       }
-    }).then(() => {
-      console.log('Photo and buttons sent successfully');
-    }).catch((err) => {
-      console.error('Error sending photo and buttons:', err);
-    });
-
-  } catch (error) {
-    console.error('Ошибка при создании пользователя:', error);
-    bot.sendMessage(chatId, 'Произошла ошибка при создании пользователя.');
+  } else if (userStates[userId] && userStates[userId].state === 'awaiting_button_url') {
+      userStates[userId].buttons[0].url = msg.text;
+      if (userStates[userId].buttons.length === 1) {
+          await sendMessageToAllUsers(userStates[userId].message, [userStates[userId].buttons[0]]);
+          delete userStates[userId];
+          bot.sendMessage(chatId, 'Сообщение с одной кнопкой успешно отправлено всем пользователям.');
+      } else {
+          userStates[userId].state = 'awaiting_button_url_2';
+          bot.sendMessage(chatId, 'Пожалуйста, отправьте URL для второй инлайн кнопки.');
+      }
+  } else if (userStates[userId] && userStates[userId].state === 'awaiting_button_url_2') {
+      userStates[userId].buttons[1].url = msg.text;
+      await sendMessageToAllUsers(userStates[userId].message, [userStates[userId].buttons[0], userStates[userId].buttons[1]]);
+      delete userStates[userId];
+      bot.sendMessage(chatId, 'Сообщение с двумя кнопками успешно отправлено всем пользователям.');
   }
 });
+
+
 
 app.listen(port, () => {
   console.log(`Сервер работает на порту ${port}`);
