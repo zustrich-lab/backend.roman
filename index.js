@@ -670,8 +670,8 @@ async function sendMessageToAllUsers(message, buttonText1, buttonUrl1, buttonTyp
                   replyMarkup = {
                       inline_keyboard: [
                           [
-                              buttonType1 === 'web_app' ? { text: buttonText1, web_app: { url: buttonUrl1 } } : { text: buttonText1, url: buttonUrl1 },
-                              buttonType2 === 'web_app' ? { text: buttonText2, web_app: { url: buttonUrl2 } } : { text: buttonText2, url: buttonUrl2 }
+                              buttonType1 === 'web_app' ? { text: buttonText1, web_app: { url: `${buttonUrl1}?userId=${user.telegramId}` } } : { text: buttonText1, url: buttonUrl1 },
+                              buttonType2 === 'web_app' ? { text: buttonText2, web_app: { url: `${buttonUrl2}?userId=${user.telegramId}` } } : { text: buttonText2, url: buttonUrl2 }
                           ]
                       ]
                   };
@@ -680,7 +680,7 @@ async function sendMessageToAllUsers(message, buttonText1, buttonUrl1, buttonTyp
                   replyMarkup = {
                       inline_keyboard: [
                           [
-                              buttonType1 === 'web_app' ? { text: buttonText1, web_app: { url: buttonUrl1 } } : { text: buttonText1, url: buttonUrl1 }
+                              buttonType1 === 'web_app' ? { text: buttonText1, web_app: { url: `${buttonUrl1}?userId=${user.telegramId}` } } : { text: buttonText1, url: buttonUrl1 }
                           ]
                       ]
                   };
@@ -710,7 +710,6 @@ async function sendMessageToAllUsers(message, buttonText1, buttonUrl1, buttonTyp
       console.error('Ошибка при отправке сообщений:', error);
   }
 }
-
 const ADMIN_IDS = [561009411]; // Замени на реальные Telegram ID администраторов
 
 bot.onText(/\/broadcast/, (msg) => {
