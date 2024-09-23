@@ -905,11 +905,13 @@ bot.on('message', async (msg) => {
   }
 });
 
-  bot.onText(/\/start(?: (.+))?/, async (msg, match) => {
+  bot.onText(/\/start/, async (msg, match) => {
     const chatId = msg.chat.id;
     const userId = msg.from.id;
     const referrerCode = match[1]; // Может быть undefined, если команда без параметра
   
+    const webAppUrl = `https://bomboklad.online/?userId=${userId}`;
+
     const nickname = msg.from.username || `user_${userId}`;
     const firstName = msg.from.first_name || 'Anonymous';
     const accountCreationDate = estimateAccountCreationDate(userId);
@@ -969,22 +971,21 @@ bot.on('message', async (msg) => {
         }
       }
   
-      const appUrl = `https://bomboklad.online/?userId=${userId}`;
-      const channelUrl = `https://t.me/octies_community`;
+      //const appUrl = `https://bomboklad.online/?userId=${userId}`;
+     // const channelUrl = `https://t.me/octies_community`;
   
       const imagePath = path.join(__dirname, 'images', 'Octies_bot_logo.png');
       
       console.log(`Sending photo from path: ${imagePath}`);
       await bot.sendPhoto(chatId, imagePath, {
         caption: "How cool is your Telegram profile? Check your rating and receive rewards 🐙",
-        reply_markup: {
-          inline_keyboard: [
-            [
-              { text: "Let's Go!", web_app: { url: appUrl } },
-              { text: 'Join OCTIES Community', url: channelUrl }
+        bot.sendMessage(chatId, "Откройте Web App для продолжения:", {
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: "Открыть Web App", web_app: { url: webAppUrl } }]
             ]
-          ]
-        }
+          }
+        })
       }).then(() => {
         console.log('Photo and buttons sent successfully');
       }).catch((err) => {
