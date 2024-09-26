@@ -634,6 +634,30 @@ app.post('/add-coins', async (req, res) => {
       res.status(500).json({ success: false, message: 'Ошибка сервера' });
     }
   });
+
+  app.post('/update-coins-bot', async (req, res) => {
+    const { userId, amount } = req.body;
+  
+    try {
+        let user = await UserProgress.findOne({ telegramId: userId });
+        if (user) {
+            user.coins += amount;
+  
+            // Установите флаг hasReceivedTwitterReward в true, если пользователь получил награду
+            if (amount === 700) {
+                user.hasBotSub = true;
+            }
+  
+            await user.save();
+            res.json({ success: true, coins: user.coins, hasBotSub: user.hasBotSub });
+        } else {
+            res.status(404).json({ success: false, message: 'Пользователь не найден.' });
+        }
+    } catch (error) {
+        console.error('Ошибка при обновлении монет:', error);
+        res.status(500).json({ success: false, message: 'Ошибка сервера' });
+    }
+  });
   
 
 // app.get('/get-user-data', async (req, res) => {
@@ -806,37 +830,53 @@ app.post('/add-coins', async (req, res) => {
 // });
   
   
-async function sendMessageToAllUsers(message, buttonText) {
+async function sendMessageToAllUsersInBatches(message, buttonText, batchSize = 100, delay = 1000) {
   try {
     const users = await UserProgress.find({}, 'telegramId');
+    let batchIndex = 0;
 
-    const promises = users.map(user => {
-      if (message.text) {
-        // Отправка текстового сообщения
-        const replyMarkup = {
-          inline_keyboard: [[{ text: buttonText, callback_data: 'start_command' }]]
-        };
-        return bot.sendMessage(user.telegramId, message.text, { reply_markup: replyMarkup });
-      } else if (message.photo) {
-        // Отправка фото
-        const photo = message.photo[message.photo.length - 1].file_id;
-        const caption = message.caption || '';
-        const replyMarkup = {
-          inline_keyboard: [[{ text: buttonText, callback_data: 'start_command' }]]
-        };
-        return bot.sendPhoto(user.telegramId, photo, { caption, reply_markup: replyMarkup });
-      } else if (message.video) {
-        // Отправка видео
-        const video = message.video.file_id;
-        const caption = message.caption || '';
-        const replyMarkup = {
-          inline_keyboard: [[{ text: buttonText, callback_data: 'start_command' }]]
-        };
-        return bot.sendVideo(user.telegramId, video, { caption, reply_markup: replyMarkup });
+    // Функция для отправки сообщений небольшой группе пользователей
+    async function sendBatch() {
+      const batch = users.slice(batchIndex, batchIndex + batchSize);
+      const promises = batch.map(user => {
+        if (message.text) {
+          // Отправка текстового сообщения
+          const replyMarkup = {
+            inline_keyboard: [[{ text: buttonText, callback_data: 'start_command' }]]
+          };
+          return bot.sendMessage(user.telegramId, message.text, { reply_markup: replyMarkup });
+        } else if (message.photo) {
+          // Отправка фото
+          const photo = message.photo[message.photo.length - 1].file_id;
+          const caption = message.caption || '';
+          const replyMarkup = {
+            inline_keyboard: [[{ text: buttonText, callback_data: 'start_command' }]]
+          };
+          return bot.sendPhoto(user.telegramId, photo, { caption, reply_markup: replyMarkup });
+        } else if (message.video) {
+          // Отправка видео
+          const video = message.video.file_id;
+          const caption = message.caption || '';
+          const replyMarkup = {
+            inline_keyboard: [[{ text: buttonText, callback_data: 'start_command' }]]
+          };
+          return bot.sendVideo(user.telegramId, video, { caption, reply_markup: replyMarkup });
+        }
+      });
+
+      await Promise.all(promises);
+
+      // Переходим к следующей группе пользователей
+      batchIndex += batchSize;
+      if (batchIndex < users.length) {
+        setTimeout(sendBatch, delay);
+      } else {
+        console.log('Все сообщения отправлены.');
       }
-    });
+    }
 
-    await Promise.all(promises);
+    // Начинаем отправку сообщений
+    sendBatch();
   } catch (error) {
     console.error('Ошибка при отправке сообщений:', error);
   }

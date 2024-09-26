@@ -49,6 +49,13 @@ const UserSchema = new mongoose.Schema({
      default: false
   },
 
+  hasBotSub:
+  {
+     type: Boolean, 
+     default: false
+    
+  },
+
   hasCheckedSubscription2:
   { type: Boolean,
      default: false
