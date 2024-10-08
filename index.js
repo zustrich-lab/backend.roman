@@ -337,24 +337,63 @@ app.post('/record-transaction', async (req, res) => {
   }
 });
 
-
-
 app.post('/get-referral-count', async (req, res) => {
-    const { userId } = req.body;
+  const { userId } = req.body;
 
-    try {
-        const user = await UserProgress.findOne({ telegramId: userId });
+  try {
+    const user = await UserProgress.findOne({ telegramId: userId });
 
-        if (user) {
-            const referralCount = user.referredUsers.length;
-            res.status(200).json({ referralCount });
-        } else {
-            res.status(404).json({ message: 'User not found' });
-        }
-    } catch (error) {
-        res.status(500).json({ message: 'Server error', error });
+    if (user) {
+      let referralCount;
+      if (user.referralThresholdReached) {
+        referralCount = user.newReferredUsers ? user.newReferredUsers.length : 0;
+      } else {
+        referralCount = user.referredUsers ? user.referredUsers.length : 0;
+      }
+      res.json({ success: true, referralCount });
+    } else {
+      res.status(404).json({ success: false, message: 'Пользователь не найден.' });
     }
+  } catch (error) {
+    console.error('Ошибка при получении количества рефералов:', error);
+    res.status(500).json({ success: false, message: 'Ошибка сервера', error });
+  }
 });
+
+
+// app.post('/add-referral', async (req, res) => {
+//   const { referrerCode, referredId } = req.body;
+
+//   try {
+//     const referrer = await UserProgress.findOne({ referralCode: referrerCode });
+//     if (!referrer) {
+//       return res.status(404).json({ success: false, message: 'Пригласивший пользователь не найден.' });
+//     }
+
+//     const referredUser = await UserProgress.findOne({ telegramId: referredId });
+//     if (referredUser) {
+//       return res.status(400).json({ success: false, message: 'Пользователь уже зарегистрирован.' });
+//     }
+
+//     const newUser = new UserProgress({ telegramId: referredId, coins: 500 });
+//     await newUser.save();
+
+//     const referralBonus = Math.floor(newUser.coins * 0.1);
+
+//     if (!referrer.referredUsers) {
+//       referrer.referredUsers = [];
+//     }
+
+//     referrer.referredUsers.push({ nickname: `user_${referredId}`, earnedCoins: referralBonus });
+//     referrer.coins += referralBonus;
+//     await referrer.save();
+
+//     res.json({ success: true, message: 'Реферал добавлен и монеты начислены.' });
+//   } catch (error) {
+//     console.error('Ошибка при добавлении реферала:', error);
+//     res.status(500).json({ success: false, message: 'Ошибка при добавлении реферала.' });
+//   }
+// });
 
 app.post('/add-referral', async (req, res) => {
   const { referrerCode, referredId } = req.body;
@@ -375,11 +414,14 @@ app.post('/add-referral', async (req, res) => {
 
     const referralBonus = Math.floor(newUser.coins * 0.1);
 
-    if (!referrer.referredUsers) {
-      referrer.referredUsers = [];
+    if (referrer.referralThresholdReached) {
+      if (!referrer.newReferredUsers) referrer.newReferredUsers = [];
+      referrer.newReferredUsers.push({ nickname: `user_${referredId}`, earnedCoins: referralBonus });
+    } else {
+      if (!referrer.referredUsers) referrer.referredUsers = [];
+      referrer.referredUsers.push({ nickname: `user_${referredId}`, earnedCoins: referralBonus });
     }
 
-    referrer.referredUsers.push({ nickname: `user_${referredId}`, earnedCoins: referralBonus });
     referrer.coins += referralBonus;
     await referrer.save();
 
@@ -389,6 +431,7 @@ app.post('/add-referral', async (req, res) => {
     res.status(500).json({ success: false, message: 'Ошибка при добавлении реферала.' });
   }
 });
+
 
 app.post('/update-coins', async (req, res) => {
   const { userId, amount } = req.body;
@@ -502,12 +545,18 @@ app.post('/get-referred-users', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Пользователь не найден.' });
     }
 
-    res.json({ success: true, referredUsers: user.referredUsers });
+    const allReferredUsers = [
+      ...(user.referredUsers || []),
+      ...(user.newReferredUsers || [])
+    ];
+
+    res.json({ success: true, referredUsers: allReferredUsers });
   } catch (error) {
     console.error('Ошибка при получении данных о рефералах:', error);
     res.status(500).json({ success: false, message: 'Ошибка при получении данных о рефералах.' });
   }
 });
+
 
 app.post('/get-coins', async (req, res) => {
   const { userId } = req.body;
@@ -1074,7 +1123,13 @@ app.post('/update-mint-status', async (req, res) => {
           const referrer = await UserProgress.findOne({ referralCode: referrerCode });
           if (referrer) {
             const referralBonus = Math.floor(user.coins * 0.1);
-            referrer.referredUsers.push({ nickname, earnedCoins: referralBonus });
+            if (referrer.referralThresholdReached) {
+              if (!referrer.newReferredUsers) referrer.newReferredUsers = [];
+              referrer.newReferredUsers.push({ nickname, earnedCoins: referralBonus });
+            } else {
+              if (!referrer.referredUsers) referrer.referredUsers = [];
+              referrer.referredUsers.push({ nickname, earnedCoins: referralBonus });
+            }
             referrer.coins += referralBonus;
             await referrer.save();
           }
