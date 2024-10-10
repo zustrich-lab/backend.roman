@@ -10,6 +10,7 @@ const path = require('path');
 const UserProgress = require('./models/userProgress');
 const Spots = require('./models/Spots');
 //const GlobalTransactionCounter = require('./models/GlobalTransactionCounter');
+MONGODB_URL = 'mongodb+srv://nazarlymar152:Nazar5002Nazar@cluster0.ht9jvso.mongodb.net/Clicker_bot?retryWrites=true&w=majority&appName=Cluster0';
 const axios = require('axios');
 const app = express();
 const port = process.env.PORT || 3001;
@@ -26,17 +27,10 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(express.json());
 
-mongoose.connect(process.env.MONGODB_URL, { useNewUrlParser: true, useUnifiedTopology: true })
+mongoose.connect(MONGODB_URL,)
     .then(() => console.log('MongoDB connected'))
     .catch(err => console.log(err));
 
-client.on('error', (err) => {
-  console.error('Ошибка подключения к Redis:', err);
-});
-    
-client.on('connect', () => {
-   console.log('Подключение к Redis успешно!');
-});
 
 const knownIds = [ 
     { id: 3226119, date: new Date('2013-11-29') },
