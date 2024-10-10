@@ -659,9 +659,7 @@ app.post('/get-referred-users', async (req, res) => {
 app.post('/get-coins', async (req, res) => {
   const { userId } = req.body;
   const accountCreationDate = estimateAccountCreationDate(userId);
-
-  try {
-    const chatMember = await bot.getChatMember(CHANNEL_ID, userId);
+  const chatMember = await bot.getChatMember(CHANNEL_ID, userId);
       const hasTelegramPremium = await checkTelegramPremium(userId);
       const subscriptions = await checkChannelSubscription(userId);
       const firstName = chatMember.user.first_name;
@@ -670,10 +668,9 @@ app.post('/get-coins', async (req, res) => {
       const referralCoins = user.referredUsers.reduce((acc, ref) => acc + ref.earnedCoins, 0);
       const totalCoins = user.coins;
       const nickname = chatMember?.user?.username || 'Anonymous';
-
-
       let user = await UserProgress.findOne({ telegramId: userId });
 
+  try {
       if (!user) {
           const coins = calculateCoins(accountCreationDate, hasTelegramPremium, subscriptions);
           user = new UserProgress({
