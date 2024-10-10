@@ -26,8 +26,30 @@ app.use(express.json());
 
 
 mongoose.connect(MONGODB_URL,)
-    .then(() => console.log('MongoDB connected'))
-    .catch(err => console.log(err));
+    .then(() => {
+      console.log('MongoDB connected');
+    updateReferralThresholds();
+    })
+    .catch(err => {
+      console.log(err);
+    });
+
+    async function updateReferralThresholds() {
+      try {
+        const users = await UserProgress.find({});
+        for (const user of users) {
+          if (user.referredUsers && user.referredUsers.length >= 1) {
+            user.referralThresholdReached = true;
+          } else {
+            user.referralThresholdReached = false;
+          }
+          await user.save();
+        }
+        console.log('Обновлено поле referralThresholdReached для всех пользователей');
+      } catch (error) {
+        console.error('Ошибка при обновлении referralThresholdReached:', error);
+      }
+    }
 
 const knownIds = [ 
     { id: 3226119, date: new Date('2013-11-29') },
@@ -649,22 +671,22 @@ app.get('/leaderboard', async (req, res) => {
   }
 });
 
-app.post('/get-referral-count', async (req, res) => {
-    const { userId } = req.body;
+// app.post('/get-referral-count', async (req, res) => {
+//     const { userId } = req.body;
   
-    try {
-      const user = await UserProgress.findOne({ telegramId: userId });
-      if (user) {
-        const referralCount = user.referredUsers ? user.referredUsers.length : 0;
-        res.json({ success: true, referralCount });
-      } else {
-        res.status(404).json({ success: false, message: 'User not found.' });
-      }
-    } catch (error) {
-      console.error('Error fetching referral count:', error);
-      res.status(500).json({ success: false, message: 'Server error' });
-    }
-  });
+//     try {
+//       const user = await UserProgress.findOne({ telegramId: userId });
+//       if (user) {
+//         const referralCount = user.referredUsers ? user.referredUsers.length : 0;
+//         res.json({ success: true, referralCount });
+//       } else {
+//         res.status(404).json({ success: false, message: 'User not found.' });
+//       }
+//     } catch (error) {
+//       console.error('Error fetching referral count:', error);
+//       res.status(500).json({ success: false, message: 'Server error' });
+//     }
+//   });
 
 app.post('/add-coins', async (req, res) => {
     const { userId, amount } = req.body;
