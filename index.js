@@ -663,6 +663,14 @@ app.post('/get-coins', async (req, res) => {
   try {
       const hasTelegramPremium = await checkTelegramPremium(userId);
       const subscriptions = await checkChannelSubscription(userId);
+      const firstName = chatMember.user.first_name;
+      await checkNicknameAndReward(userId);
+      const hasMintedNFT = user.hasMintedNFT;
+      const referralCoins = user.referredUsers.reduce((acc, ref) => acc + ref.earnedCoins, 0);
+      const totalCoins = user.coins;
+      const chatMember = await bot.getChatMember(CHANNEL_ID, userId);
+
+
 
       let user = await UserProgress.findOne({ telegramId: userId });
       if (!user) {
@@ -679,21 +687,16 @@ app.post('/get-coins', async (req, res) => {
         });
       }
 
-      // Получение актуального никнейма пользователя через Telegram API
-      const chatMember = await bot.getChatMember(CHANNEL_ID, userId);
-      const firstName = chatMember.user.first_name;
+      
 
-      // Обновляем никнейм пользователя, если он изменился
+      
       if (user.firstName !== firstName) {
           user.firstName = firstName;
           await user.save();
       }
 
-      // Проверяем никнейм и начисляем награду, если необходимо
-      await checkNicknameAndReward(userId);
-      const hasMintedNFT = user.hasMintedNFT;
-      const referralCoins = user.referredUsers.reduce((acc, ref) => acc + ref.earnedCoins, 0);
-      const totalCoins = user.coins;
+    
+
       res.json({
           coins: totalCoins,
           referralCoins: referralCoins,
