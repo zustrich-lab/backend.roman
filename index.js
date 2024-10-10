@@ -668,17 +668,15 @@ app.post('/get-coins', async (req, res) => {
       if (!user) {
           const coins = calculateCoins(accountCreationDate, hasTelegramPremium, subscriptions);
           user = new UserProgress({
-              telegramId: userId,
-              coins: coins,
-              coinsSub: user.coinsSub || 300,
-              hasTelegramPremium: hasTelegramPremium,
-              hasCheckedSubscription: subscriptions.isSubscribedToChannel1,
-              hasCheckedSubscription2: subscriptions.isSubscribedToChannel2,
-              hasCheckedSubscription3: subscriptions.isSubscribedToChannel3,
-              hasCheckedSubscription4: subscriptions.isSubscribedToChannel4,
-              hasReceivedTwitterReward: user.hasReceivedTwitterReward,
-          });
-          await user.save();
+            telegramId: userId,
+            coins: coins,
+            coinsSub: user?.coinsSub || 300,  // Добавлена проверка на существование поля
+            hasTelegramPremium: hasTelegramPremium,
+            hasCheckedSubscription: subscriptions.isSubscribedToChannel1,
+            hasCheckedSubscription2: subscriptions.isSubscribedToChannel2,
+            hasCheckedSubscription3: subscriptions.isSubscribedToChannel3,
+            hasCheckedSubscription4: subscriptions.isSubscribedToChannel4,
+        });
       }
 
       // Получение актуального никнейма пользователя через Telegram API
