@@ -661,6 +661,7 @@ app.post('/get-coins', async (req, res) => {
   const accountCreationDate = estimateAccountCreationDate(userId);
 
   try {
+    const chatMember = await bot.getChatMember(CHANNEL_ID, userId);
       const hasTelegramPremium = await checkTelegramPremium(userId);
       const subscriptions = await checkChannelSubscription(userId);
       const firstName = chatMember.user.first_name;
@@ -668,15 +669,16 @@ app.post('/get-coins', async (req, res) => {
       const hasMintedNFT = user.hasMintedNFT;
       const referralCoins = user.referredUsers.reduce((acc, ref) => acc + ref.earnedCoins, 0);
       const totalCoins = user.coins;
-      const chatMember = await bot.getChatMember(CHANNEL_ID, userId);
-
+      const nickname = chatMember?.user?.username || 'Anonymous';
 
 
       let user = await UserProgress.findOne({ telegramId: userId });
+
       if (!user) {
           const coins = calculateCoins(accountCreationDate, hasTelegramPremium, subscriptions);
           user = new UserProgress({
             telegramId: userId,
+            nickname: nickname, // Убедитесь, что nickname инициализирован
             coins: coins,
             coinsSub: user?.coinsSub || 300,  // Добавлена проверка на существование поля
             hasTelegramPremium: hasTelegramPremium,
@@ -687,15 +689,10 @@ app.post('/get-coins', async (req, res) => {
         });
       }
 
-      
-
-      
       if (user.firstName !== firstName) {
           user.firstName = firstName;
           await user.save();
       }
-
-    
 
       res.json({
           coins: totalCoins,
