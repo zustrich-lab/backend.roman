@@ -443,22 +443,24 @@ app.get('/current-spots', async (req, res) => {
   }
 });
 
-app.post('/get-referral-count', async (req, res) => {
-    const { userId } = req.body;
+// app.post('/get-referral-count', async (req, res) => {
+//     const { userId } = req.body;
 
-    try {
-        const user = await UserProgress.findOne({ telegramId: userId });
+//     try {
+//         const user = await UserProgress.findOne({ telegramId: userId });
 
-        if (user) {
-            const referralCount = user.referredUsers.length;
-            res.status(200).json({ referralCount });
-        } else {
-            res.status(404).json({ message: 'User not found' });
-        }
-    } catch (error) {
-        res.status(500).json({ message: 'Server error', error });
-    }
-});
+//         if (user) {
+//             const referralCount = user.referredUsers.length;
+//             res.status(200).json({ referralCount });
+//         } else {
+//             res.status(404).json({ message: 'User not found' });
+//         }
+//     } catch (error) {
+//         res.status(500).json({ message: 'Server error', error });
+//     }
+// });
+
+// В вашем файле сервера
 
 app.post('/add-referral', async (req, res) => {
   const { referrerCode, referredId } = req.body;
@@ -478,12 +480,23 @@ app.post('/add-referral', async (req, res) => {
     await newUser.save();
 
     const referralBonus = Math.floor(newUser.coins * 0.1);
+    const nickname = `user_${referredId}`;
 
-    if (!referrer.referredUsers) {
-      referrer.referredUsers = [];
+    // Инициализируем массивы, если они не существуют
+    if (!referrer.referredUsers) referrer.referredUsers = [];
+    if (!referrer.newReferredUsers) referrer.newReferredUsers = [];
+
+    // Проверяем количество рефералов и записываем в соответствующий массив
+    if (referrer.referralThresholdReached || referrer.referredUsers.length >= 1) {
+      referrer.newReferredUsers.push({ nickname, earnedCoins: referralBonus });
+      referrer.referralThresholdReached = true;
+    } else {
+      referrer.referredUsers.push({ nickname, earnedCoins: referralBonus });
+      if (referrer.referredUsers.length >= 1) {
+        referrer.referralThresholdReached = true;
+      }
     }
 
-    referrer.referredUsers.push({ nickname: `user_${referredId}`, earnedCoins: referralBonus });
     referrer.coins += referralBonus;
     await referrer.save();
 
@@ -631,7 +644,12 @@ app.post('/get-referred-users', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Пользователь не найден.' });
     }
 
-    res.json({ success: true, referredUsers: user.referredUsers });
+    const allReferredUsers = [
+      ...(user.referredUsers || []),
+      ...(user.newReferredUsers || []),
+    ];
+
+    res.json({ success: true, referredUsers: allReferredUsers });
   } catch (error) {
     console.error('Ошибка при получении данных о рефералах:', error);
     res.status(500).json({ success: false, message: 'Ошибка при получении данных о рефералах.' });
@@ -737,21 +755,32 @@ app.get('/leaderboard', async (req, res) => {
 });
 
 app.post('/get-referral-count', async (req, res) => {
-    const { userId } = req.body;
-  
-    try {
-      const user = await UserProgress.findOne({ telegramId: userId });
-      if (user) {
-        const referralCount = user.referredUsers ? user.referredUsers.length : 0;
-        res.json({ success: true, referralCount });
-      } else {
-        res.status(404).json({ success: false, message: 'User not found.' });
-      }
-    } catch (error) {
-      console.error('Error fetching referral count:', error);
-      res.status(500).json({ success: false, message: 'Server error' });
+  const { userId } = req.body;
+
+  try {
+    const user = await UserProgress.findOne({ telegramId: userId });
+    if (user) {
+      const oldReferralCount = user.referredUsers ? user.referredUsers.length : 0;
+      const newReferralCount = user.newReferredUsers ? user.newReferredUsers.length : 0;
+      const totalReferralCount = oldReferralCount + newReferralCount;
+      const referralThresholdReached = user.referralThresholdReached || oldReferralCount >= 15;
+
+      res.json({
+        success: true,
+        oldReferralCount,
+        newReferralCount,
+        totalReferralCount,
+        referralThresholdReached,
+      });
+    } else {
+      res.status(404).json({ success: false, message: 'Пользователь не найден' });
     }
+  } catch (error) {
+    console.error('Ошибка при получении количества рефералов:', error);
+    res.status(500).json({ success: false, message: 'Ошибка сервера' });
+  }
 });
+
 
 app.post('/add-coins', async (req, res) => {
     const { userId, amount } = req.body;

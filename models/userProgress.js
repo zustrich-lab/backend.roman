@@ -89,15 +89,9 @@ const UserSchema = new mongoose.Schema({
      unique: true
   }, 
 
-  newReferredUsers: [{ 
-    nickname: String,
-    earnedCoins: Number
-  }],
+  newReferredUsers: [{ nickname: String, earnedCoins: Number }],
 
-  referralThresholdReached: { 
-    type: Boolean, 
-    default: false 
-  },
+  referralThresholdReached: { type: Boolean, default: false },
   
   referredUsers:
   [{ 
