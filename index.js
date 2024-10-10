@@ -2,21 +2,23 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const redis = require('redis');
+const client = redis.createClient();
 const bodyParser = require('body-parser');
 const TelegramBot = require('node-telegram-bot-api');
 const path = require('path');
 const UserProgress = require('./models/userProgress');
+const Spots = require('./models/Spots');
 //const GlobalTransactionCounter = require('./models/GlobalTransactionCounter');
-MONGODB_URL = 'mongodb+srv://nazarlymar152:Nazar5002Nazar@cluster0.ht9jvso.mongodb.net/Clicker_bot?retryWrites=true&w=majority&appName=Cluster0';
 const axios = require('axios');
 const app = express();
 const port = process.env.PORT || 3001;
-const token = '7432486747:AAEOpIDoqdr9bxFZ5ugbhSKFCAdDj2i2CJk';
+const token = '7218535993:AAEKWj9VqAxp-kcH7boFDkDoiTXGBjQzEIQ';
 const bot = new TelegramBot(token, { polling: true });
-const CHANNEL_ID = -1002246870197;//-1002234145528; 
-const CHANNEL_ID_2 =-1002088709942;//-1001313439342;
-const CHANNEL_ID_3 =-1002241923161;//-1002208556196; 
-const CHANNEL_ID_4 =-1002167619205; 
+const CHANNEL_ID = -1002234145528; 
+const CHANNEL_ID_2 =-1002088709942;
+const CHANNEL_ID_3 =-1002208556196; 
+const CHANNEL_ID_4 =-1002246870197; 
 
 const userStates = {};
 
@@ -24,32 +26,17 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(express.json());
 
+mongoose.connect(process.env.MONGODB_URL, { useNewUrlParser: true, useUnifiedTopology: true })
+    .then(() => console.log('MongoDB connected'))
+    .catch(err => console.log(err));
 
-mongoose.connect(MONGODB_URL,)
-    .then(() => {
-      console.log('MongoDB connected');
-    updateReferralThresholds();
-    })
-    .catch(err => {
-      console.log(err);
-    });
-
-    async function updateReferralThresholds() {
-      try {
-        const users = await UserProgress.find({});
-        for (const user of users) {
-          if (user.referredUsers && user.referredUsers.length >= 1) {
-            user.referralThresholdReached = true;
-          } else {
-            user.referralThresholdReached = false;
-          }
-          await user.save();
-        }
-        console.log('Обновлено поле referralThresholdReached для всех пользователей');
-      } catch (error) {
-        console.error('Ошибка при обновлении referralThresholdReached:', error);
-      }
-    }
+client.on('error', (err) => {
+  console.error('Ошибка подключения к Redis:', err);
+});
+    
+client.on('connect', () => {
+   console.log('Подключение к Redis успешно!');
+});
 
 const knownIds = [ 
     { id: 3226119, date: new Date('2013-11-29') },
@@ -93,6 +80,7 @@ const knownIds = [
     { id: 5000000000, date: new Date('2023-01-01') },
     { id: 6984356782, date: new Date('2024-01-01') },
     { id: 7266007926, date: new Date('2024-07-13') },
+    { id: 7840211863, date: new Date('2024-09-23') }
 
  ];
 
@@ -154,53 +142,92 @@ function calculateCoins(accountCreationDate, hasTelegramPremium, subscriptions) 
     return baseCoins + premiumBonus + subscriptionBonus1 + subscriptionBonus2 + subscriptionBonus3 + subscriptionBonus4;
   }
   
-async function checkChannelSubscription(telegramId) {
+// async function checkChannelSubscription(telegramId) {
+//   try {
+//     const response1 = await axios.get(`https://api.telegram.org/bot${token}/getChatMember`, {
+//       params: {
+//         chat_id: CHANNEL_ID,
+//         user_id: telegramId
+//       }
+//     });
+
+//     const response2 = await axios.get(`https://api.telegram.org/bot${token}/getChatMember`, {
+//       params: {
+//         chat_id: CHANNEL_ID_2,
+//         user_id: telegramId
+//       }
+//     });
+
+//     const response3 = await axios.get(`https://api.telegram.org/bot${token}/getChatMember`, {
+//         params: {
+//           chat_id: CHANNEL_ID_3,
+//           user_id: telegramId
+//         }
+//     });
+
+//     const response4 = await axios.get(`https://api.telegram.org/bot${token}/getChatMember`, {
+//         params: {
+//           chat_id: CHANNEL_ID_4,
+//           user_id: telegramId
+//         }
+//       });
+
+
+//     const status1 = response1.data.result.status;
+//     const status2 = response2.data.result.status;
+//     const status3 = response3.data.result.status;
+//     const status4 = response4.data.result.status;
+
+//     const isSubscribedToChannel1 = ['member', 'administrator', 'creator'].includes(status1);
+//     const isSubscribedToChannel2 = ['member', 'administrator', 'creator'].includes(status2);
+//     const isSubscribedToChannel3 = ['member', 'administrator', 'creator'].includes(status3);
+//     const isSubscribedToChannel4 = ['member', 'administrator', 'creator'].includes(status4);
+
+//     return { isSubscribedToChannel1, isSubscribedToChannel2, isSubscribedToChannel3, isSubscribedToChannel4 };
+//   } catch (error) {
+//     console.error('Ошибка при проверке подписки на канал:', error);
+//     return { isSubscribedToChannel1: false, isSubscribedToChannel2: false, isSubscribedToChannel3: false, isSubscribedToChannel4: false };
+//   }
+// }
+
+async function checkChannelSubscription(userId) {
   try {
-    const response1 = await axios.get(`https://api.telegram.org/bot${token}/getChatMember`, {
-      params: {
-        chat_id: CHANNEL_ID,
-        user_id: telegramId
-      }
-    });
+    // Все запросы к API Telegram
+    const [response1, response2, response3, response4] = await Promise.all([
+      axios.get(`https://api.telegram.org/bot${token}/getChatMember`, { params: { chat_id: CHANNEL_ID, user_id: userId } }),
+      axios.get(`https://api.telegram.org/bot${token}/getChatMember`, { params: { chat_id: CHANNEL_ID_2, user_id: userId } }),
+      axios.get(`https://api.telegram.org/bot${token}/getChatMember`, { params: { chat_id: CHANNEL_ID_3, user_id: userId } }),
+      axios.get(`https://api.telegram.org/bot${token}/getChatMember`, { params: { chat_id: CHANNEL_ID_4, user_id: userId } })
+    ]);
 
-    const response2 = await axios.get(`https://api.telegram.org/bot${token}/getChatMember`, {
-      params: {
-        chat_id: CHANNEL_ID_2,
-        user_id: telegramId
-      }
-    });
-
-    const response3 = await axios.get(`https://api.telegram.org/bot${token}/getChatMember`, {
-        params: {
-          chat_id: CHANNEL_ID_3,
-          user_id: telegramId
-        }
-    });
-
-    const response4 = await axios.get(`https://api.telegram.org/bot${token}/getChatMember`, {
-        params: {
-          chat_id: CHANNEL_ID_4,
-          user_id: telegramId
-        }
-      });
-
-
-    const status1 = response1.data.result.status;
-    const status2 = response2.data.result.status;
-    const status3 = response3.data.result.status;
-    const status4 = response4.data.result.status;
-
-    const isSubscribedToChannel1 = ['member', 'administrator', 'creator'].includes(status1);
-    const isSubscribedToChannel2 = ['member', 'administrator', 'creator'].includes(status2);
-    const isSubscribedToChannel3 = ['member', 'administrator', 'creator'].includes(status3);
-    const isSubscribedToChannel4 = ['member', 'administrator', 'creator'].includes(status4);
+    // Проверка статусов
+    const isSubscribedToChannel1 = ['member', 'administrator', 'creator'].includes(response1.data.result.status);
+    const isSubscribedToChannel2 = ['member', 'administrator', 'creator'].includes(response2.data.result.status);
+    const isSubscribedToChannel3 = ['member', 'administrator', 'creator'].includes(response3.data.result.status);
+    const isSubscribedToChannel4 = ['member', 'administrator', 'creator'].includes(response4.data.result.status);
 
     return { isSubscribedToChannel1, isSubscribedToChannel2, isSubscribedToChannel3, isSubscribedToChannel4 };
   } catch (error) {
-    console.error('Ошибка при проверке подписки на канал:', error);
+    console.error('Ошибка при проверке подписки:', error);
     return { isSubscribedToChannel1: false, isSubscribedToChannel2: false, isSubscribedToChannel3: false, isSubscribedToChannel4: false };
   }
 }
+
+// Маршрут для проверки подписки
+app.post('/check-subscription', async (req, res) => {
+  const { userId } = req.body;  // Получаем userId из тела запроса
+  if (!userId) {
+    return res.status(400).json({ error: 'Не указан userId' });
+  }
+
+  try {
+    const result = await checkChannelSubscription(userId);
+    res.json(result);  // Возвращаем результат проверки
+  } catch (error) {
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+});
+
 
 async function checkTelegramPremium(userId) {
   try {
@@ -212,7 +239,6 @@ async function checkTelegramPremium(userId) {
     return false;
   }
 }
-
 
 // Функция для проверки никнейма и награды
 const checkNicknameAndReward = async (userId) => {
@@ -246,9 +272,10 @@ const checkNicknameAndReward = async (userId) => {
             user.coins -= 300;
             user.hasNicknameBonus = false;
             console.log(`Пользователю ${user.firstName} снято 569 монет за удаление "octies" из ника.`);
-        } else {
-            console.log(`Нет изменений в нике или бонус уже был обработан.`);
-        }
+         }
+        // else {
+        //     console.log(`Нет изменений в нике или бонус уже был обработан.`);
+        // }
 
         // Сбрасываем флаг после завершения обработки
         user.processingNicknameBonus = false;
@@ -329,8 +356,6 @@ app.post('/check-subscription', async (req, res) => {
   }
 });
 
-
-
 app.post('/record-transaction', async (req, res) => {
   const { userId } = req.body;
 
@@ -359,63 +384,87 @@ app.post('/record-transaction', async (req, res) => {
   }
 });
 
-app.post('/get-referral-count', async (req, res) => {
-  const { userId } = req.body;
-
+app.post('/transaction-success', async (req, res) => {
   try {
-    const user = await UserProgress.findOne({ telegramId: userId });
-
-    if (user) {
-      let referralCount;
-      if (user.referralThresholdReached) {
-        referralCount = user.newReferredUsers ? user.newReferredUsers.length : 0;
-      } else {
-        referralCount = user.referredUsers ? user.referredUsers.length : 0;
+      // Получаем текущее состояние из базы данных
+      let spots = await Spots.findOne();
+      
+      // Если данных нет, создаем запись
+      if (!spots) {
+          spots = new Spots({ availableSpots: 250 });
       }
-      res.json({ success: true, referralCount });
-    } else {
-      res.status(404).json({ success: false, message: 'Пользователь не найден.' });
-    }
+
+      // Уменьшаем количество свободных мест
+      if (spots.availableSpots > 0) {
+          spots.availableSpots -= 1;
+      }
+
+      // Сохраняем обновленное состояние в базу данных
+      await spots.save();
+
+      // Отправляем обновленное количество мест клиенту
+      res.json({ success: true, availableSpots: spots.availableSpots });
   } catch (error) {
-    console.error('Ошибка при получении количества рефералов:', error);
-    res.status(500).json({ success: false, message: 'Ошибка сервера', error });
+      console.error('Ошибка при обновлении количества мест:', error);
+      res.status(500).json({ success: false, message: 'Ошибка сервера' });
   }
 });
 
+app.post('/special-transaction-success', async (req, res) => {
+  try {
+      const { userId } = req.body;
 
-// app.post('/add-referral', async (req, res) => {
-//   const { referrerCode, referredId } = req.body;
+     
+      let user = await UserProgress.findOne({ telegramId: userId });
 
-//   try {
-//     const referrer = await UserProgress.findOne({ referralCode: referrerCode });
-//     if (!referrer) {
-//       return res.status(404).json({ success: false, message: 'Пригласивший пользователь не найден.' });
-//     }
+      if (!user) {
+          return res.status(404).json({ success: false, message: 'Пользователь не найден.' });
+      }
 
-//     const referredUser = await UserProgress.findOne({ telegramId: referredId });
-//     if (referredUser) {
-//       return res.status(400).json({ success: false, message: 'Пользователь уже зарегистрирован.' });
-//     }
+      
+      user.specialTransactionCounter += 1;
 
-//     const newUser = new UserProgress({ telegramId: referredId, coins: 500 });
-//     await newUser.save();
+     
+      await user.save();
 
-//     const referralBonus = Math.floor(newUser.coins * 0.1);
+      res.json({ success: true, message: 'Special transaction counter updated successfully.' });
+  } catch (error) {
+      console.error('Ошибка при обновлении специального счетчика транзакций:', error);
+      res.status(500).json({ success: false, message: 'Ошибка сервера' });
+  }
+});
 
-//     if (!referrer.referredUsers) {
-//       referrer.referredUsers = [];
-//     }
+app.get('/current-spots', async (req, res) => {
+  try {
+      // Получаем текущее состояние из базы данных
+      const spots = await Spots.findOne();
 
-//     referrer.referredUsers.push({ nickname: `user_${referredId}`, earnedCoins: referralBonus });
-//     referrer.coins += referralBonus;
-//     await referrer.save();
+      // Если данных нет, возвращаем значение по умолчанию
+      const availableSpots = spots ? spots.availableSpots : 250;
 
-//     res.json({ success: true, message: 'Реферал добавлен и монеты начислены.' });
-//   } catch (error) {
-//     console.error('Ошибка при добавлении реферала:', error);
-//     res.status(500).json({ success: false, message: 'Ошибка при добавлении реферала.' });
-//   }
-// });
+      res.json({ success: true, availableSpots });
+  } catch (error) {
+      console.error('Ошибка при получении количества мест:', error);
+      res.status(500).json({ success: false, message: 'Ошибка сервера' });
+  }
+});
+
+app.post('/get-referral-count', async (req, res) => {
+    const { userId } = req.body;
+
+    try {
+        const user = await UserProgress.findOne({ telegramId: userId });
+
+        if (user) {
+            const referralCount = user.referredUsers.length;
+            res.status(200).json({ referralCount });
+        } else {
+            res.status(404).json({ message: 'User not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error });
+    }
+});
 
 app.post('/add-referral', async (req, res) => {
   const { referrerCode, referredId } = req.body;
@@ -436,14 +485,11 @@ app.post('/add-referral', async (req, res) => {
 
     const referralBonus = Math.floor(newUser.coins * 0.1);
 
-    if (referrer.referralThresholdReached) {
-      if (!referrer.newReferredUsers) referrer.newReferredUsers = [];
-      referrer.newReferredUsers.push({ nickname: `user_${referredId}`, earnedCoins: referralBonus });
-    } else {
-      if (!referrer.referredUsers) referrer.referredUsers = [];
-      referrer.referredUsers.push({ nickname: `user_${referredId}`, earnedCoins: referralBonus });
+    if (!referrer.referredUsers) {
+      referrer.referredUsers = [];
     }
 
+    referrer.referredUsers.push({ nickname: `user_${referredId}`, earnedCoins: referralBonus });
     referrer.coins += referralBonus;
     await referrer.save();
 
@@ -454,7 +500,6 @@ app.post('/add-referral', async (req, res) => {
   }
 });
 
-
 app.post('/update-coins', async (req, res) => {
   const { userId, amount } = req.body;
 
@@ -462,6 +507,7 @@ app.post('/update-coins', async (req, res) => {
       let user = await UserProgress.findOne({ telegramId: userId });
       if (user) {
           user.coins += amount;
+          user.coinsSub += amount;
 
           // Установите флаг hasReceivedTwitterReward в true, если пользователь получил награду
           if (amount === 500) {
@@ -479,7 +525,29 @@ app.post('/update-coins', async (req, res) => {
   }
 });
 
+app.post('/update-coins-bot', async (req, res) => {
+  const { userId, amount } = req.body;
 
+  try {
+      let user = await UserProgress.findOne({ telegramId: userId });
+      if (user) {
+          user.coins += amount;
+
+          // Установите флаг hasReceivedTwitterReward в true, если пользователь получил награду
+          if (amount === 750) {
+              user.hasBotSub = true;
+          }
+
+          await user.save();
+          res.json({ success: true, coins: user.coins, hasBotSub: user.hasBotSub });
+      } else {
+          res.status(404).json({ success: false, message: 'Пользователь не найден.' });
+      }
+  } catch (error) {
+      console.error('Ошибка при обновлении монет:', error);
+      res.status(500).json({ success: false, message: 'Ошибка сервера' });
+  }
+});
 
 app.post('/check-subscription-and-update', async (req, res) => {
     const { userId } = req.body;
@@ -547,6 +615,8 @@ app.post('/check-subscription-and-update', async (req, res) => {
                 hasCheckedSubscription2: user.hasCheckedSubscription2,
                 hasCheckedSubscription3: user.hasCheckedSubscription3,
                 hasCheckedSubscription4: user.hasCheckedSubscription4,
+                specialTransactionCounter: user.specialTransactionCounter,
+
                 hasNicknameBonus: user.hasNicknameBonus
             });
         } else {
@@ -567,18 +637,12 @@ app.post('/get-referred-users', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Пользователь не найден.' });
     }
 
-    const allReferredUsers = [
-      ...(user.referredUsers || []),
-      ...(user.newReferredUsers || [])
-    ];
-
-    res.json({ success: true, referredUsers: allReferredUsers });
+    res.json({ success: true, referredUsers: user.referredUsers });
   } catch (error) {
     console.error('Ошибка при получении данных о рефералах:', error);
     res.status(500).json({ success: false, message: 'Ошибка при получении данных о рефералах.' });
   }
 });
-
 
 app.post('/get-coins', async (req, res) => {
   const { userId } = req.body;
@@ -599,7 +663,9 @@ app.post('/get-coins', async (req, res) => {
               hasCheckedSubscription: subscriptions.isSubscribedToChannel1,
               hasCheckedSubscription2: subscriptions.isSubscribedToChannel2,
               hasCheckedSubscription3: subscriptions.isSubscribedToChannel3,
-              hasCheckedSubscription4: subscriptions.isSubscribedToChannel4
+              hasCheckedSubscription4: subscriptions.isSubscribedToChannel4,
+              hasReceivedTwitterReward: user.hasReceivedTwitterReward,
+              hasBotSub: user.hasBotSub
           });
           await user.save();
       }
@@ -616,18 +682,22 @@ app.post('/get-coins', async (req, res) => {
 
       // Проверяем никнейм и начисляем награду, если необходимо
       await checkNicknameAndReward(userId);
-
+      const hasMintedNFT = user.hasMintedNFT;
       const referralCoins = user.referredUsers.reduce((acc, ref) => acc + ref.earnedCoins, 0);
       const totalCoins = user.coins;
       res.json({
           coins: totalCoins,
           referralCoins: referralCoins,
+          coinsSub: user.coinsSub,
           hasTelegramPremium: user.hasTelegramPremium,
           hasCheckedSubscription: user.hasCheckedSubscription,
           hasCheckedSubscription2: user.hasCheckedSubscription2,
           hasCheckedSubscription3: user.hasCheckedSubscription3,
           hasCheckedSubscription4: user.hasCheckedSubscription4,
+          hasReceivedTwitterReward: user.hasReceivedTwitterReward,
           hasNicknameBonus: user.hasNicknameBonus,
+          specialTransactionCounter: user.specialTransactionCounter,
+          hasMintedNFT,
           transactionNumber: user.transactionNumber,
           accountCreationDate: accountCreationDate.toISOString()
       });
@@ -636,7 +706,6 @@ app.post('/get-coins', async (req, res) => {
       res.status(500).json({ error: 'Ошибка сервера' });
   }
 });
-
 
 app.get('/user-rank', async (req, res) => {
   const { userId } = req.query;
@@ -656,7 +725,9 @@ app.get('/user-rank', async (req, res) => {
 
 app.get('/leaderboard', async (req, res) => {
   try {
-    const users = await UserProgress.find({});
+    const users = await UserProgress.find({}, { nickname: 1, coins: 1 })
+    .sort({ coins: -1 })
+    .limit(50);
 
     const leaderboard = users.map(user => ({
       _id: user._id,
@@ -671,22 +742,22 @@ app.get('/leaderboard', async (req, res) => {
   }
 });
 
-// app.post('/get-referral-count', async (req, res) => {
-//     const { userId } = req.body;
+app.post('/get-referral-count', async (req, res) => {
+    const { userId } = req.body;
   
-//     try {
-//       const user = await UserProgress.findOne({ telegramId: userId });
-//       if (user) {
-//         const referralCount = user.referredUsers ? user.referredUsers.length : 0;
-//         res.json({ success: true, referralCount });
-//       } else {
-//         res.status(404).json({ success: false, message: 'User not found.' });
-//       }
-//     } catch (error) {
-//       console.error('Error fetching referral count:', error);
-//       res.status(500).json({ success: false, message: 'Server error' });
-//     }
-//   });
+    try {
+      const user = await UserProgress.findOne({ telegramId: userId });
+      if (user) {
+        const referralCount = user.referredUsers ? user.referredUsers.length : 0;
+        res.json({ success: true, referralCount });
+      } else {
+        res.status(404).json({ success: false, message: 'User not found.' });
+      }
+    } catch (error) {
+      console.error('Error fetching referral count:', error);
+      res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
 
 app.post('/add-coins', async (req, res) => {
     const { userId, amount } = req.body;
@@ -704,107 +775,103 @@ app.post('/add-coins', async (req, res) => {
       console.error('Ошибка при добавлении монет:', error);
       res.status(500).json({ success: false, message: 'Ошибка сервера' });
     }
-  });
+});
 
-  app.post('/update-coins-bot', async (req, res) => {
-    const { userId, amount } = req.body;
-  
-    try {
-        let user = await UserProgress.findOne({ telegramId: userId });
-        if (user) {
-            user.coins += amount;
-  
-            // Установите флаг hasReceivedTwitterReward в true, если пользователь получил награду
-            if (amount === 750) {
-                user.hasBotSub = true;
-            }
-  
-            await user.save();
-            res.json({ success: true, coins: user.coins, hasBotSub: user.hasBotSub });
-        } else {
-            res.status(404).json({ success: false, message: 'Пользователь не найден.' });
-        }
-    } catch (error) {
-        console.error('Ошибка при обновлении монет:', error);
-        res.status(500).json({ success: false, message: 'Ошибка сервера' });
-    }
-  });
-  
+// // app.get('/get-user-data', async (req, res) => {
+// //   const { userId } = req.query;
 
-// app.get('/get-user-data', async (req, res) => {
-//   const { userId } = req.query;
-
+// //   try {
+// //     const user = await UserProgress.findOne({ telegramId: userId });
+// //     if (!user) {
+// //       return res.status(404).json({ error: 'Пользователь не найден' });
+// //     }
+// //     res.json({
+// //       coins: user.coins,
+// //       telegramId: user.telegramId,
+// //       hasTelegramPremium: user.hasTelegramPremium,
+// //       hasCheckedSubscription: user.hasCheckedSubscription,
+// //       hasCheckedSubscription2: user.hasCheckedSubscription2
+// //     });
+// //   } catch (error) {
+// //     console.error('Ошибка при получении данных пользователя:', error);
+// //     res.status(500).json({ error: 'Ошибка сервера' });
+// //   }
+// // });
+// async function sendMessageToAllUsers(message, buttonText) {
 //   try {
-//     const user = await UserProgress.findOne({ telegramId: userId });
-//     if (!user) {
-//       return res.status(404).json({ error: 'Пользователь не найден' });
-//     }
-//     res.json({
-//       coins: user.coins,
-//       telegramId: user.telegramId,
-//       hasTelegramPremium: user.hasTelegramPremium,
-//       hasCheckedSubscription: user.hasCheckedSubscription,
-//       hasCheckedSubscription2: user.hasCheckedSubscription2
+//     const users = await UserProgress.find({}, 'telegramId');
+
+//     const promises = users.map(user => {
+//       if (message.text) {
+//         // Отправка текстового сообщения
+//         const replyMarkup = {
+//           inline_keyboard: [[{ text: buttonText, callback_data: 'start_command' }]]
+//         };
+//         return bot.sendMessage(user.telegramId, message.text, { reply_markup: replyMarkup });
+//       } else if (message.photo) {
+//         // Отправка фото
+//         const photo = message.photo[message.photo.length - 1].file_id;
+//         const caption = message.caption || '';
+//         const replyMarkup = {
+//           inline_keyboard: [[{ text: buttonText, callback_data: 'start_command' }]]
+//         };
+//         return bot.sendPhoto(user.telegramId, photo, { caption, reply_markup: replyMarkup });
+//       } else if (message.video) {
+//         // Отправка видео
+//         const video = message.video.file_id;
+//         const caption = message.caption || '';
+//         const replyMarkup = {
+//           inline_keyboard: [[{ text: buttonText, callback_data: 'start_command' }]]
+//         };
+//         return bot.sendVideo(user.telegramId, video, { caption, reply_markup: replyMarkup });
+//       }
 //     });
+
+//     await Promise.all(promises);
 //   } catch (error) {
-//     console.error('Ошибка при получении данных пользователя:', error);
-//     res.status(500).json({ error: 'Ошибка сервера' });
-//   }
-// });
-// async function sendMessageToAllUsers(message, buttonText1, buttonUrl1, buttonType1, buttonText2 = null, buttonUrl2 = null, buttonType2 = null) {
-//   try {
-//       const users = await UserProgress.find({}, 'telegramId');
-
-//       const promises = users.map(user => {
-//           let replyMarkup = {};
-
-//           // Проверяем, добавлены ли кнопки
-//           if (buttonText1 && buttonUrl1) {
-//               // Если вторая кнопка также передана, добавляем обе кнопки
-//               if (buttonText2 && buttonUrl2) {
-//                   replyMarkup = {
-//                       inline_keyboard: [
-//                           [
-//                               buttonType1 === 'web_app' ? { text: buttonText1, web_app: { url: `${buttonUrl1}?userId=${user.telegramId}` } } : { text: buttonText1, url: buttonUrl1 },
-//                               buttonType2 === 'web_app' ? { text: buttonText2, web_app: { url: `${buttonUrl2}?userId=${user.telegramId}` } } : { text: buttonText2, url: buttonUrl2 }
-//                           ]
-//                       ]
-//                   };
-//               } else {
-//                   // Если передана только одна кнопка
-//                   replyMarkup = {
-//                       inline_keyboard: [
-//                           [
-//                               buttonType1 === 'web_app' ? { text: buttonText1, web_app: { url: `${buttonUrl1}?userId=${user.telegramId}` } } : { text: buttonText1, url: buttonUrl1 }
-//                           ]
-//                       ]
-//                   };
-//               }
-//           }
-
-//           // Отправка текстового сообщения
-//           if (message.text) {
-//               return bot.sendMessage(user.telegramId, message.text, { reply_markup: replyMarkup });
-//           } 
-//           // Отправка фото
-//           else if (message.photo) {
-//               const photo = message.photo[message.photo.length - 1].file_id;
-//               const caption = message.caption || '';
-//               return bot.sendPhoto(user.telegramId, photo, { caption, reply_markup: replyMarkup });
-//           } 
-//           // Отправка видео
-//           else if (message.video) {
-//               const video = message.video.file_id;
-//               const caption = message.caption || '';
-//               return bot.sendVideo(user.telegramId, video, { caption, reply_markup: replyMarkup });
-//           }
-//       });
-
-//       await Promise.all(promises);
-//   } catch (error) {
-//       console.error('Ошибка при отправке сообщений:', error);
+//     console.error('Ошибка при отправке сообщений:', error);
 //   }
 // }
+
+// bot.on('callback_query', async (callbackQuery) => {
+//   const message = callbackQuery.message;
+//   const userId = callbackQuery.from.id;
+
+//   if (callbackQuery.data === 'start_command') {
+   
+    
+//     // Вызовите функцию, которая отвечает за команду /start
+//     handleStartCommand(userId, message.chat.id);
+//   }
+
+//   bot.answerCallbackQuery(callbackQuery.id);
+// });
+
+// async function handleStartCommand(userId, chatId) {
+//   // Ваш код для обработки команды /start
+//   const appUrl = `https://octies.org/?userId=${userId}`;
+//   const channelUrl = `https://t.me/octies_community`;
+
+//   try {
+//     const imagePath = path.join(__dirname, 'images', 'Octies_bot_logo.png');
+    
+//     await bot.sendPhoto(chatId, imagePath, {
+//       caption: "How cool is your Telegram profile? Check your rating and receive rewards 🐙",
+//       reply_markup: {
+//         inline_keyboard: [
+//           [
+//             { text: "Let's Go!", web_app: { url: appUrl } },
+//             { text: 'Join OCTIES Community', url: channelUrl }
+//           ]
+//         ]
+//       }
+//     });
+//   } catch (error) {
+//     console.error('Ошибка при отправке фото:', error);
+//     bot.sendMessage(chatId, 'Произошла ошибка при отправке фото.');
+//   }
+// }
+
 // const ADMIN_IDS = [561009411]; // Замени на реальные Telegram ID администраторов
 
 // bot.onText(/\/broadcast/, (msg) => {
@@ -818,140 +885,52 @@ app.post('/add-coins', async (req, res) => {
 //     userStates[userId] = { state: 'awaiting_message' };
 //     bot.sendMessage(chatId, 'Пожалуйста, отправьте сообщение или фото, которое вы хотите разослать всем пользователям.');
 // });
-
-// bot.on('message', async (msg) => {
-//   const chatId = msg.chat.id;
-//   const userId = msg.from.id;
-
-//   // Проверяем, есть ли текст в сообщении
-//   if (msg.text && typeof msg.text === 'string') {
-//       if (userStates[userId] && userStates[userId].state === 'awaiting_message') {
-//           userStates[userId].message = msg;
-//           userStates[userId].state = 'awaiting_button_choice';
-
-//           bot.sendMessage(chatId, 'Вы хотите добавить инлайн кнопку? Отправьте "да" или "нет".');
-//       } 
-//       else if (userStates[userId] && userStates[userId].state === 'awaiting_button_choice') {
-//           if (msg.text.toLowerCase() === 'да') {
-//               bot.sendMessage(chatId, 'Вы хотите одну или две кнопки? Отправьте "1" или "2".');
-//               userStates[userId].state = 'awaiting_number_of_buttons';
-//           } else {
-//               await sendMessageToAllUsers(userStates[userId].message);
-//               delete userStates[userId];
-//               bot.sendMessage(chatId, 'Сообщение успешно отправлено всем пользователям.');
-//           }
-//       } 
-//       else if (userStates[userId] && userStates[userId].state === 'awaiting_number_of_buttons') {
-//           if (msg.text === '1') {
-//               userStates[userId].state = 'awaiting_button_text1';
-//               bot.sendMessage(chatId, 'Пожалуйста, отправьте текст для первой кнопки.');
-//           } else if (msg.text === '2') {
-//               userStates[userId].state = 'awaiting_button_text1';
-//               userStates[userId].expectTwoButtons = true;
-//               bot.sendMessage(chatId, 'Пожалуйста, отправьте текст для первой кнопки.');
-//           }
-//       } 
-//       else if (userStates[userId] && userStates[userId].state === 'awaiting_button_text1') {
-//           userStates[userId].buttonText1 = msg.text;
-//           userStates[userId].state = 'awaiting_button_url1';
-//           bot.sendMessage(chatId, 'Пожалуйста, отправьте URL для первой кнопки.');
-//       } 
-//       else if (userStates[userId] && userStates[userId].state === 'awaiting_button_url1') {
-//           userStates[userId].buttonUrl1 = msg.text;
-//           userStates[userId].state = 'awaiting_button_type1';
-//           bot.sendMessage(chatId, 'Какого типа будет первая кнопка? Отправьте "web_app" или "url".');
-//       } 
-//       else if (userStates[userId] && userStates[userId].state === 'awaiting_button_type1') {
-//           userStates[userId].buttonType1 = msg.text.toLowerCase();
-
-//           if (userStates[userId].expectTwoButtons) {
-//               userStates[userId].state = 'awaiting_button_text2';
-//               bot.sendMessage(chatId, 'Пожалуйста, отправьте текст для второй кнопки.');
-//           } else {
-//               await sendMessageToAllUsers(userStates[userId].message, userStates[userId].buttonText1, userStates[userId].buttonUrl1, userStates[userId].buttonType1);
-//               delete userStates[userId];
-//               bot.sendMessage(chatId, 'Сообщение с одной кнопкой успешно отправлено всем пользователям.');
-//           }
-//       } 
-//       else if (userStates[userId] && userStates[userId].state === 'awaiting_button_text2') {
-//           userStates[userId].buttonText2 = msg.text;
-//           userStates[userId].state = 'awaiting_button_url2';
-//           bot.sendMessage(chatId, 'Пожалуйста, отправьте URL для второй кнопки.');
-//       } 
-//       else if (userStates[userId] && userStates[userId].state === 'awaiting_button_url2') {
-//           userStates[userId].buttonUrl2 = msg.text;
-//           userStates[userId].state = 'awaiting_button_type2';
-//           bot.sendMessage(chatId, 'Какого типа будет вторая кнопка? Отправьте "web_app" или "url".');
-//       } 
-//       else if (userStates[userId] && userStates[userId].state === 'awaiting_button_type2') {
-//           userStates[userId].buttonType2 = msg.text.toLowerCase();
-
-//           await sendMessageToAllUsers(
-//               userStates[userId].message,
-//               userStates[userId].buttonText1, userStates[userId].buttonUrl1, userStates[userId].buttonType1,
-//               userStates[userId].buttonText2, userStates[userId].buttonUrl2, userStates[userId].buttonType2
-//           );
-//           delete userStates[userId];
-//           bot.sendMessage(chatId, 'Сообщение с двумя кнопками успешно отправлено всем пользователям.');
-//       }
-//   } else {
-//       // Если сообщение не содержит текст, сообщаем пользователю
-//       bot.sendMessage(chatId, 'Пожалуйста, отправьте текстовое сообщение.');
-//   }
-// });
-  
-  
-async function sendMessageToAllUsersInBatches(message, buttonText, batchSize = 100, delay = 1000) {
+const sendMessageToAllUsers = async (message, buttonText) => {
   try {
+    // Получаем всех пользователей из базы данных
     const users = await UserProgress.find({}, 'telegramId');
-    let batchIndex = 0;
 
-    // Функция для отправки сообщений небольшой группе пользователей
-    async function sendBatch() {
-      const batch = users.slice(batchIndex, batchIndex + batchSize);
-      const promises = batch.map(user => {
+    // Устанавливаем размер батча
+    const chunkSize = 200; // количество пользователей в одном "батче"
+
+    // Проходим по пользователям батчами
+    for (let i = 0; i < users.length; i += chunkSize) {
+      const chunk = users.slice(i, i + chunkSize);
+
+      // Отправляем сообщения пользователям в этом батче
+      await Promise.all(chunk.map(async (user) => {
         if (message.text) {
-          // Отправка текстового сообщения
+          // Отправка текстового сообщения с кнопкой
           const replyMarkup = {
             inline_keyboard: [[{ text: buttonText, callback_data: 'start_command' }]]
           };
-          return bot.sendMessage(user.telegramId, message.text, { reply_markup: replyMarkup });
+          await bot.sendMessage(user.telegramId, message.text, { reply_markup: replyMarkup });
         } else if (message.photo) {
-          // Отправка фото
+          // Отправка фото с кнопкой
           const photo = message.photo[message.photo.length - 1].file_id;
           const caption = message.caption || '';
           const replyMarkup = {
             inline_keyboard: [[{ text: buttonText, callback_data: 'start_command' }]]
           };
-          return bot.sendPhoto(user.telegramId, photo, { caption, reply_markup: replyMarkup });
+          await bot.sendPhoto(user.telegramId, photo, { caption, reply_markup: replyMarkup });
         } else if (message.video) {
-          // Отправка видео
+          // Отправка видео с кнопкой
           const video = message.video.file_id;
           const caption = message.caption || '';
           const replyMarkup = {
             inline_keyboard: [[{ text: buttonText, callback_data: 'start_command' }]]
           };
-          return bot.sendVideo(user.telegramId, video, { caption, reply_markup: replyMarkup });
+          await bot.sendVideo(user.telegramId, video, { caption, reply_markup: replyMarkup });
         }
-      });
+      }));
 
-      await Promise.all(promises);
-
-      // Переходим к следующей группе пользователей
-      batchIndex += batchSize;
-      if (batchIndex < users.length) {
-        setTimeout(sendBatch, delay);
-      } else {
-        console.log('Все сообщения отправлены.');
-      }
+      // Пауза 1 секунда между батчами для избежания перегрузки
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
-
-    // Начинаем отправку сообщений
-    sendBatch();
   } catch (error) {
     console.error('Ошибка при отправке сообщений:', error);
   }
-}
+};
 
 bot.on('callback_query', async (callbackQuery) => {
   const message = callbackQuery.message;
@@ -1042,8 +1021,9 @@ bot.onText(/\/broadcast/, (msg) => {
       bot.sendMessage(chatId, 'Сообщение с инлайн кнопкой успешно отправлено всем пользователям.');
     }
   });
+
   
-  app.post('/save-wallet-address', async (req, res) => {
+app.post('/save-wallet-address', async (req, res) => {
     const { userId, walletAddress } = req.body;
 
     console.log(`Запрос на сохранение адреса кошелька: userId=${userId}, walletAddress=${walletAddress}`);
@@ -1088,104 +1068,97 @@ app.post('/update-mint-status', async (req, res) => {
   }
 });
 
-  bot.onText(/\/start/, async (msg, match) => {
-    const chatId = msg.chat.id;
-    const userId = msg.from.id;
-    const referrerCode = match[1]; // Может быть undefined, если команда без параметра
-  
-    const nickname = msg.from.username || `user_${userId}`;
-    const firstName = msg.from.first_name || 'Anonymous';
-    const accountCreationDate = estimateAccountCreationDate(userId);
-    const [hasTelegramPremium, subscriptions] = await Promise.all([
-      checkTelegramPremium(userId),
-      checkChannelSubscription(userId)
-    ]);
-  
-    const coins = calculateCoins(accountCreationDate, hasTelegramPremium, subscriptions);
-  
-    try {
-      let user = await UserProgress.findOne({ telegramId: userId });
-      const isNewUser = !user;
-      if (isNewUser) {
-        const referralCode = generateReferralCode();
-        user = new UserProgress({ telegramId: userId, nickname, firstName, coins, hasTelegramPremium, hasCheckedSubscription: subscriptions.isSubscribedToChannel1, hasCheckedSubscription2: subscriptions.isSubscribedToChannel2, hasCheckedSubscription3: subscriptions.isSubscribedToChannel3, hasCheckedSubscription4: subscriptions.isSubscribedToChannel4,referralCode });
-        await user.save();
-      } else {
-        const referralCoins = user.referredUsers.reduce((acc, ref) => acc + ref.earnedCoins, 0);
-        user.coins = coins + referralCoins + user.coinsSub;
-        if(user.firstName.includes('Octies')) {
-          user.coins += 300;
-          user.hasNicknameBonus = true;
-        }
-        if(user.hasReceivedTwitterReward) {
-           user.coins += 500;
-        }
-        if(user.hasCheckedSubscription){
-           user.coins += 1000;
-        }
-        if(user.hasTelegramPremium){
-           user.coins += 500;
-        }
-       
-  
-        user.nickname = nickname;
-        user.firstName = firstName;
-        user.hasTelegramPremium = hasTelegramPremium;
-        user.hasCheckedSubscription = subscriptions.isSubscribedToChannel1;
-        user.hasCheckedSubscription2 = subscriptions.isSubscribedToChannel2;
-        user.hasCheckedSubscription3 = subscriptions.isSubscribedToChannel3;
-        user.hasCheckedSubscription4 = subscriptions.isSubscribedToChannel4;
-        await user.save();
-      }
-  
-      if (referrerCode && isNewUser) {
-        if (referrerCode === user.referralCode) {
-          bot.sendMessage(chatId, 'Вы не можете использовать свою собственную реферальную ссылку.');
-        } else {
-          const referrer = await UserProgress.findOne({ referralCode: referrerCode });
-          if (referrer) {
-            const referralBonus = Math.floor(user.coins * 0.1);
-            if (referrer.referralThresholdReached) {
-              if (!referrer.newReferredUsers) referrer.newReferredUsers = [];
-              referrer.newReferredUsers.push({ nickname, earnedCoins: referralBonus });
-            } else {
-              if (!referrer.referredUsers) referrer.referredUsers = [];
-              referrer.referredUsers.push({ nickname, earnedCoins: referralBonus });
-            }
-            referrer.coins += referralBonus;
-            await referrer.save();
-          }
-        }
-      }
-  
-      const appUrl = `https://bomboklad.online/?userId=${userId}`;
-      const channelUrl = `https://t.me/octies_community`;
-  
-      const imagePath = path.join(__dirname, 'images', 'Octies_bot_logo.png');
-      
-      console.log(`Sending photo from path: ${imagePath}`);
-      await bot.sendPhoto(chatId, imagePath, {
-        caption: "How cool is your Telegram profile? Check your rating and receive rewards 🐙",
-        reply_markup: {
-          inline_keyboard: [
-            [
-              { text: "Let's Go!", web_app: { url: appUrl } },
-              { text: 'Join OCTIES Community', url: channelUrl }
-            ]
-          ]
-        }
-      }).then(() => {
-        console.log('Photo and buttons sent successfully');
-      }).catch((err) => {
-        console.error('Error sending photo and buttons:', err);
-      });
-  
-    } catch (error) {
-      console.error('Ошибка при создании пользователя:', error);
-      bot.sendMessage(chatId, 'Произошла ошибка при создании пользователя.');
-    }
-  });
+bot.onText(/\/start(?: (.+))?/, async (msg, match) => {
+  const chatId = msg.chat.id;
+  const userId = msg.from.id;
+  const referrerCode = match[1]; // Может быть undefined, если команда без параметра
 
+  const nickname = msg.from.username || `user_${userId}`;
+  const firstName = msg.from.first_name || 'Anonymous';
+  const accountCreationDate = estimateAccountCreationDate(userId);
+  const [hasTelegramPremium, subscriptions] = await Promise.all([
+    checkTelegramPremium(userId),
+    checkChannelSubscription(userId)
+  ]);
+
+  const coins = calculateCoins(accountCreationDate, hasTelegramPremium, subscriptions);
+
+  try {
+    let user = await UserProgress.findOne({ telegramId: userId });
+    const isNewUser = !user;
+    if (isNewUser) {
+      const referralCode = generateReferralCode();
+      user = new UserProgress({ telegramId: userId, nickname, firstName, coins, hasTelegramPremium, hasCheckedSubscription: subscriptions.isSubscribedToChannel1, hasCheckedSubscription2: subscriptions.isSubscribedToChannel2, hasCheckedSubscription3: subscriptions.isSubscribedToChannel3, hasCheckedSubscription4: subscriptions.isSubscribedToChannel4,referralCode });
+      await user.save();
+    } else {
+      const referralCoins = user.referredUsers.reduce((acc, ref) => acc + ref.earnedCoins, 0);
+      user.coins = coins + referralCoins + user.coinsSub;
+      if(user.firstName.includes('Octies')) {
+        user.coins += 300;
+        user.hasNicknameBonus = true;
+      }
+      if(user.hasReceivedTwitterReward) {
+         user.coins += 500;
+      }
+      if(user.hasCheckedSubscription){
+         user.coins += 1000;
+      }
+      if(user.hasTelegramPremium){
+         user.coins += 500;
+      }
+     
+
+      user.nickname = nickname;
+      user.firstName = firstName;
+      user.hasTelegramPremium = hasTelegramPremium;
+      user.hasCheckedSubscription = subscriptions.isSubscribedToChannel1;
+      user.hasCheckedSubscription2 = subscriptions.isSubscribedToChannel2;
+      user.hasCheckedSubscription3 = subscriptions.isSubscribedToChannel3;
+      user.hasCheckedSubscription4 = subscriptions.isSubscribedToChannel4;
+      await user.save();
+    }
+
+    if (referrerCode && isNewUser) {
+      if (referrerCode === user.referralCode) {
+        bot.sendMessage(chatId, 'Вы не можете использовать свою собственную реферальную ссылку.');
+      } else {
+        const referrer = await UserProgress.findOne({ referralCode: referrerCode });
+        if (referrer) {
+          const referralBonus = Math.floor(user.coins * 0.1);
+          referrer.referredUsers.push({ nickname, earnedCoins: referralBonus });
+          referrer.coins += referralBonus;
+          await referrer.save();
+        }
+      }
+    }
+
+    const appUrl = `https://bomboklad.online/?userId=${userId}`;
+    const channelUrl = `https://t.me/octies_community`;
+
+    const imagePath = path.join(__dirname, 'images', 'Octies_bot_logo.png');
+    
+    console.log(`Sending photo from path: ${imagePath}`);
+    await bot.sendPhoto(chatId, imagePath, {
+      caption: "How cool is your Telegram profile? Check your rating and receive rewards 🐙",
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: "Let's Go!", web_app: { url: appUrl } },
+            { text: 'Join OCTIES Community', url: channelUrl }
+          ]
+        ]
+      }
+    }).then(() => {
+      console.log('Photo and buttons sent successfully');
+    }).catch((err) => {
+      console.error('Error sending photo and buttons:', err);
+    });
+
+  } catch (error) {
+    console.error('Ошибка при создании пользователя:', error);
+    bot.sendMessage(chatId, 'Произошла ошибка при создании пользователя.');
+  }
+});
 
 app.listen(port, () => {
   console.log(`Сервер работает на порту ${port}`);
