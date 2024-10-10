@@ -676,7 +676,7 @@ app.post('/get-coins', async (req, res) => {
               hasCheckedSubscription2: subscriptions.isSubscribedToChannel2,
               hasCheckedSubscription3: subscriptions.isSubscribedToChannel3,
               hasCheckedSubscription4: subscriptions.isSubscribedToChannel4,
-              hasReceivedTwitterReward: user.hasReceivedTwitterReward,
+              //hasReceivedTwitterReward: user.hasReceivedTwitterReward,
               hasBotSub: user.hasBotSub
           });
           await user.save();
