@@ -829,7 +829,6 @@ app.post('/update-ads-watched', async (req, res) => {
     // Обновляем время последнего просмотра рекламы
     user.lastAdWatchTime = currentTime;
     user.adsWatched += 1;
-    user.AlladsWatched += 1;
     await user.save();
 
     res.json({ success: true, message: 'Реклама просмотрена успешно.' });
