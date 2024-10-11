@@ -55,6 +55,10 @@ const UserSchema = new mongoose.Schema({
      default: false
     
   },
+  hasMintedNFT: {
+    type: Boolean,
+    default: false
+  },
 
   hasCheckedSubscription2:
   { type: Boolean,
@@ -88,11 +92,11 @@ const UserSchema = new mongoose.Schema({
     type: String,
      unique: true
   }, 
-
-  newReferredUsers: [{ nickname: String, earnedCoins: Number }],
-
-  referralThresholdReached: { type: Boolean, default: false },
-  
+  newReferredUsers: [{ 
+    nickname: String,
+    earnedCoins: Number,
+    date: { type: Date, default: Date.now } // Добавляем дату приглашения
+  }],
   referredUsers:
   [{ 
     nickname: String,

@@ -484,15 +484,13 @@ app.post('/add-referral', async (req, res) => {
     if (!referrer.referredUsers) referrer.referredUsers = [];
     if (!referrer.newReferredUsers) referrer.newReferredUsers = [];
 
-    // Проверяем количество рефералов и записываем в соответствующий массив
-    if (referrer.referralThresholdReached || referrer.referredUsers.length >= 1) {
+    // Проверяем, получил ли пользователь уже NFT
+    if (referrer.hasMintedNFT) {
+      // Если да, добавляем новых рефералов в newReferredUsers
       referrer.newReferredUsers.push({ nickname, earnedCoins: referralBonus });
-      referrer.referralThresholdReached = true;
     } else {
+      // Если нет, добавляем в referredUsers
       referrer.referredUsers.push({ nickname, earnedCoins: referralBonus });
-      if (referrer.referredUsers.length >= 1) {
-        referrer.referralThresholdReached = true;
-      }
     }
 
     referrer.coins += referralBonus;
@@ -790,18 +788,18 @@ app.post('/get-referral-count', async (req, res) => {
 
   try {
     const user = await UserProgress.findOne({ telegramId: userId });
+
     if (user) {
       const oldReferralCount = user.referredUsers ? user.referredUsers.length : 0;
       const newReferralCount = user.newReferredUsers ? user.newReferredUsers.length : 0;
       const totalReferralCount = oldReferralCount + newReferralCount;
-      const referralThresholdReached = user.referralThresholdReached || oldReferralCount >= 15;
 
       res.json({
         success: true,
         oldReferralCount,
         newReferralCount,
         totalReferralCount,
-        referralThresholdReached,
+        hasMintedNFT: user.hasMintedNFT,
       });
     } else {
       res.status(404).json({ success: false, message: 'Пользователь не найден' });
@@ -811,7 +809,6 @@ app.post('/get-referral-count', async (req, res) => {
     res.status(500).json({ success: false, message: 'Ошибка сервера' });
   }
 });
-
 
 app.post('/add-coins', async (req, res) => {
     const { userId, amount } = req.body;
@@ -1113,6 +1110,11 @@ app.post('/update-mint-status', async (req, res) => {
     }
 
     user.hasMintedNFT = hasMintedNFT;
+
+    if (hasMintedNFT) {
+      user.newReferredUsers = [];
+    }
+
     await user.save();
 
     res.json({ success: true, message: 'Статус mint обновлен успешно.' });
