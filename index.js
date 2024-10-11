@@ -78,6 +78,15 @@ const knownIds = [
 
  ];
 
+ cron.schedule('0 0 * * *', async () => {
+  try {
+      await UserProgress.updateMany({}, { $set: { adsWatched: 0 } });
+      console.log('adsWatched reset to 0 for all users.');
+  } catch (error) {
+      console.error('Error resetting adsWatched:', error);
+  }
+});
+
 const generateReferralCode = () => Math.random().toString(36).substr(2, 9);
 const generateTelegramLink = (referralCode) => `https://t.me/test_for_everyone_bot?start=${referralCode}`;
 
