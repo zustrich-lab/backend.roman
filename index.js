@@ -727,6 +727,7 @@ app.post('/get-coins', async (req, res) => {
           hasNicknameBonus: user.hasNicknameBonus,
           specialTransactionCounter: user.specialTransactionCounter,
           hasMintedNFT: user.hasMintedNFT,
+          adsWatched: user.adsWatched,
           transactionNumber: user.transactionNumber,
           accountCreationDate: accountCreationDate.toISOString()
       });
