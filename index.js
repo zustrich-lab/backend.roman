@@ -114,28 +114,27 @@ function estimateAccountCreationDate(userId) {
 }
 
 function calculateCoins(accountCreationDate, hasTelegramPremium, subscriptions) {
-    const currentDate = new Date();
-    const oneYearAgo = new Date();
-    oneYearAgo.setFullYear(currentDate.getFullYear() - 1);
-  
-    // Проверяем, если аккаунт был создан менее года назад
-    if (accountCreationDate > oneYearAgo) {
-      return 300;
-    }
-  
-    const currentYear = currentDate.getFullYear();
-    const accountYear = accountCreationDate.getFullYear();
-    const yearsOld = currentYear - accountYear;
-    const baseCoins = yearsOld * 500;
-    const premiumBonus = hasTelegramPremium ? 500 : 0;
-    const subscriptionBonus1 = subscriptions.isSubscribedToChannel1 ? 1000 : 0;
-    const subscriptionBonus2 = subscriptions.isSubscribedToChannel2 ? 750 : 0;
-    const subscriptionBonus3 = subscriptions.isSubscribedToChannel3 ? 750 : 0;
-    const subscriptionBonus4 = subscriptions.isSubscribedToChannel4 ? 750 : 0;
-   
-    return baseCoins + premiumBonus + subscriptionBonus1 + subscriptionBonus2 + subscriptionBonus3 + subscriptionBonus4;
+  const currentDate = new Date();
+  const oneYearAgo = new Date();
+  oneYearAgo.setFullYear(currentDate.getFullYear() - 1);
+
+  // Проверяем, если аккаунт был создан менее года назад
+  if (accountCreationDate > oneYearAgo) {
+    return 300;
   }
-  
+
+  const currentYear = currentDate.getFullYear();
+  const accountYear = accountCreationDate.getFullYear();
+  const yearsOld = currentYear - accountYear;
+  const baseCoins = yearsOld * 500;
+  const premiumBonus = hasTelegramPremium ? 500 : 0;
+  const subscriptionBonus1 = subscriptions.isSubscribedToChannel1 ? 1000 : 0;
+  const subscriptionBonus2 = subscriptions.isSubscribedToChannel2 ? 750 : 0;
+  const subscriptionBonus3 = subscriptions.isSubscribedToChannel3 ? 750 : 0;
+  const subscriptionBonus4 = subscriptions.isSubscribedToChannel4 ? 750 : 0;
+
+  return baseCoins + premiumBonus + subscriptionBonus1 + subscriptionBonus2 + subscriptionBonus3 + subscriptionBonus4;
+}
 // async function checkChannelSubscription(telegramId) {
 //   try {
 //     const response1 = await axios.get(`https://api.telegram.org/bot${token}/getChatMember`, {
@@ -186,7 +185,6 @@ function calculateCoins(accountCreationDate, hasTelegramPremium, subscriptions) 
 
 async function checkChannelSubscription(userId) {
   try {
-    // Все запросы к API Telegram
     const [response1, response2, response3, response4] = await Promise.all([
       axios.get(`https://api.telegram.org/bot${token}/getChatMember`, { params: { chat_id: CHANNEL_ID, user_id: userId } }),
       axios.get(`https://api.telegram.org/bot${token}/getChatMember`, { params: { chat_id: CHANNEL_ID_2, user_id: userId } }),
@@ -194,7 +192,6 @@ async function checkChannelSubscription(userId) {
       axios.get(`https://api.telegram.org/bot${token}/getChatMember`, { params: { chat_id: CHANNEL_ID_4, user_id: userId } })
     ]);
 
-    // Проверка статусов
     const isSubscribedToChannel1 = ['member', 'administrator', 'creator'].includes(response1.data.result.status);
     const isSubscribedToChannel2 = ['member', 'administrator', 'creator'].includes(response2.data.result.status);
     const isSubscribedToChannel3 = ['member', 'administrator', 'creator'].includes(response3.data.result.status);
@@ -202,7 +199,8 @@ async function checkChannelSubscription(userId) {
 
     return { isSubscribedToChannel1, isSubscribedToChannel2, isSubscribedToChannel3, isSubscribedToChannel4 };
   } catch (error) {
-    console.error('Ошибка при проверке подписки:', error);
+    console.error('Ошибка при проверке подписки на каналы:', error);
+    // Если произошла ошибка, возвращаем значения по умолчанию
     return { isSubscribedToChannel1: false, isSubscribedToChannel2: false, isSubscribedToChannel3: false, isSubscribedToChannel4: false };
   }
 }
@@ -226,10 +224,10 @@ app.post('/check-subscription', async (req, res) => {
 async function checkTelegramPremium(userId) {
   try {
     const chatMember = await bot.getChatMember(CHANNEL_ID, userId);
-    console.log('chatMember:', chatMember);
-    return chatMember.user.is_premium;
+    return chatMember.user.is_premium || false;
   } catch (error) {
     console.error('Ошибка при проверке Telegram Premium:', error);
+    // Если пользователь не найден, возвращаем false
     return false;
   }
 }
@@ -659,41 +657,80 @@ app.post('/get-referred-users', async (req, res) => {
 app.post('/get-coins', async (req, res) => {
   const { userId } = req.body;
   const accountCreationDate = estimateAccountCreationDate(userId);
-  const chatMember = await bot.getChatMember(CHANNEL_ID, userId);
-      const hasTelegramPremium = await checkTelegramPremium(userId);
-      const subscriptions = await checkChannelSubscription(userId);
-      const firstName = chatMember.user.first_name;
-      await checkNicknameAndReward(userId);
-      const hasMintedNFT = user.hasMintedNFT;
-      const referralCoins = user.referredUsers.reduce((acc, ref) => acc + ref.earnedCoins, 0);
-      const totalCoins = user.coins;
-      const nickname = chatMember?.user?.username || 'Anonymous';
-      let user = await UserProgress.findOne({ telegramId: userId });
 
   try {
+      let hasTelegramPremium = false;
+      let subscriptions = {
+        isSubscribedToChannel1: false,
+        isSubscribedToChannel2: false,
+        isSubscribedToChannel3: false,
+        isSubscribedToChannel4: false
+      };
+
+      // Попытка получить данные о Telegram Premium
+      try {
+        hasTelegramPremium = await checkTelegramPremium(userId);
+      } catch (error) {
+        console.error('Ошибка в checkTelegramPremium:', error);
+      }
+
+      // Попытка проверить подписку на каналы
+      try {
+        subscriptions = await checkChannelSubscription(userId);
+      } catch (error) {
+        console.error('Ошибка в checkChannelSubscription:', error);
+      }
+
+      let user = await UserProgress.findOne({ telegramId: userId });
       if (!user) {
           const coins = calculateCoins(accountCreationDate, hasTelegramPremium, subscriptions);
           user = new UserProgress({
-            telegramId: userId,
-            nickname: nickname, // Убедитесь, что nickname инициализирован
-            coins: coins,
-            coinsSub: user?.coinsSub || 300,  // Добавлена проверка на существование поля
-            hasTelegramPremium: hasTelegramPremium,
-            hasCheckedSubscription: subscriptions.isSubscribedToChannel1,
-            hasCheckedSubscription2: subscriptions.isSubscribedToChannel2,
-            hasCheckedSubscription3: subscriptions.isSubscribedToChannel3,
-            hasCheckedSubscription4: subscriptions.isSubscribedToChannel4,
-        });
-      }
-
-      if (user.firstName !== firstName) {
-          user.firstName = firstName;
+              telegramId: userId,
+              coins: coins,
+              coinsSub: 0, // Инициализируем coinsSub в 0
+              hasTelegramPremium: hasTelegramPremium,
+              hasCheckedSubscription: subscriptions.isSubscribedToChannel1,
+              hasCheckedSubscription2: subscriptions.isSubscribedToChannel2,
+              hasCheckedSubscription3: subscriptions.isSubscribedToChannel3,
+              hasCheckedSubscription4: subscriptions.isSubscribedToChannel4,
+              hasReceivedTwitterReward: false,
+              hasBotSub: false,
+              firstName: 'Anonymous', // Значение по умолчанию
+              nickname: `user_${userId}`, // Значение по умолчанию
+          });
           await user.save();
       }
 
+      // Попытка получить актуальное имя пользователя через Telegram API
+      try {
+        const chatMember = await bot.getChatMember(CHANNEL_ID, userId);
+        const firstName = chatMember.user.first_name;
+
+        try {
+          const chatMember = await bot.getChatMember(CHANNEL_ID, userId);
+          const firstName = chatMember.user.first_name || 'Anonymous';
+        
+          if (user.firstName !== firstName) {
+            user.firstName = firstName;
+            await user.save();
+          }
+        } catch (error) {
+          console.error('Ошибка при получении информации о пользователе:', error);
+          // Если произошла ошибка, оставляем firstName как есть или устанавливаем значение по умолчанию
+          if (!user.firstName) {
+            user.firstName = 'Anonymous';
+            await user.save();
+          }
+        }
+
+      } catch (error) {
+        console.error('Ошибка при получении информации о пользователе:', error);
+      }
+
+      // Отправляем данные пользователя в ответе
       res.json({
-          coins: totalCoins,
-          referralCoins: referralCoins,
+          coins: user.coins,
+          referralCoins: user.referredUsers.reduce((acc, ref) => acc + ref.earnedCoins, 0),
           coinsSub: user.coinsSub,
           hasTelegramPremium: user.hasTelegramPremium,
           hasCheckedSubscription: user.hasCheckedSubscription,
@@ -703,7 +740,7 @@ app.post('/get-coins', async (req, res) => {
           hasReceivedTwitterReward: user.hasReceivedTwitterReward,
           hasNicknameBonus: user.hasNicknameBonus,
           specialTransactionCounter: user.specialTransactionCounter,
-          hasMintedNFT,
+          hasMintedNFT: user.hasMintedNFT,
           transactionNumber: user.transactionNumber,
           accountCreationDate: accountCreationDate.toISOString()
       });
