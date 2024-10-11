@@ -73,6 +73,7 @@ AlladsWatched: {
   type: Number,
   default: 0,
 },
+lastAdWatchTime: { type: Date, default: null },
 
   hasCheckedSubscription3:
   { type: Boolean,

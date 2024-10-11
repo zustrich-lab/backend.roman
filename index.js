@@ -809,17 +809,33 @@ app.post('/update-ads-watched', async (req, res) => {
 
   try {
     let user = await UserProgress.findOne({ telegramId: userId });
-      if (!user) {
-          return res.status(404).json({ success: false, message: 'User not found.' });
-      }
-      user.adsWatched += 1;
-      user.AlladsWatched += 1;
-      await user.save();
 
-      res.json({ success: true, adsWatched: user.adsWatched });
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Пользователь не найден.' });
+    }
+
+    const currentTime = new Date();
+    const lastAdWatchTime = user.lastAdWatchTime;
+
+    // Если прошло меньше 3 минут с момента последнего просмотра рекламы
+    if (lastAdWatchTime && (currentTime - lastAdWatchTime) < 3 * 60 * 1000) {
+      const remainingTime = 3 * 60 * 1000 - (currentTime - lastAdWatchTime);
+      return res.status(400).json({ 
+        success: false, 
+        message: `Подождите ${Math.ceil(remainingTime / 1000)} секунд перед просмотром следующей рекламы.` 
+      });
+    }
+
+    // Обновляем время последнего просмотра рекламы
+    user.lastAdWatchTime = currentTime;
+    user.adsWatched += 1;
+    user.AlladsWatched += 1;
+    await user.save();
+
+    res.json({ success: true, message: 'Реклама просмотрена успешно.' });
   } catch (error) {
-      console.error('Error updating ads watched:', error);
-      res.status(500).json({ success: false, message: 'Error updating ads watched.' });
+    console.error('Ошибка при показе рекламы:', error);
+    res.status(500).json({ success: false, message: 'Ошибка при показе рекламы.' });
   }
 });
 
