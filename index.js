@@ -9,6 +9,7 @@ const TelegramBot = require('node-telegram-bot-api');
 const path = require('path');
 const UserProgress = require('./models/userProgress');
 const Spots = require('./models/Spots');
+const cron = require('node-cron');
 //const GlobalTransactionCounter = require('./models/GlobalTransactionCounter');
 MONGODB_URL = 'mongodb+srv://nazarlymar152:Nazar5002Nazar@cluster0.ht9jvso.mongodb.net/Clicker_bot?retryWrites=true&w=majority&appName=Cluster0';
 const axios = require('axios');
