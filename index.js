@@ -771,11 +771,11 @@ app.get('/leaderboard', async (req, res) => {
   }
 });
 
-app.post('/get-ads-watched', async (req, res) => {
+app.get('/get-ads-watched', async (req, res) => {
   const { userId } = req.query;
 
   try {
-    let user = await UserProgress.findOne({ telegramId: userId });
+    const user = await UserProgress.findOne({ telegramId: userId });
       if (!user) {
           return res.status(404).json({ success: false, message: 'User not found.' });
       }
