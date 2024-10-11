@@ -623,6 +623,7 @@ app.post('/check-subscription-and-update', async (req, res) => {
                 hasCheckedSubscription3: user.hasCheckedSubscription3,
                 hasCheckedSubscription4: user.hasCheckedSubscription4,
                 specialTransactionCounter: user.specialTransactionCounter,
+                adsWatched: user.adsWatched,
 
                 hasNicknameBonus: user.hasNicknameBonus
             });
