@@ -79,7 +79,6 @@ const knownIds = [
 
  ];
 
- const cron = require('node-cron');
 
  cron.schedule('0 0 * * *', async () => {
    try {
