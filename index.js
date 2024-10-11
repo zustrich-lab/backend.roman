@@ -792,16 +792,37 @@ app.get('/get-ads-watched', async (req, res) => {
 
   try {
     const user = await UserProgress.findOne({ telegramId: userId });
-      if (!user) {
-          return res.status(404).json({ success: false, message: 'User not found.' });
-      }
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
 
-      res.json({ success: true, adsWatched: user.adsWatched });
+    const now = new Date();
+    const cooldownSeconds = 180; // 3 минуты ожидания между просмотрами
+    let timeRemaining = 0;
+    let canWatchAd = true;
+
+    if (user.lastAdWatchTime) {
+      const lastAdTime = new Date(user.lastAdWatchTime);
+      const secondsSinceLastAd = (now - lastAdTime) / 1000;
+      if (secondsSinceLastAd < cooldownSeconds) {
+        canWatchAd = false;
+        timeRemaining = Math.ceil(cooldownSeconds - secondsSinceLastAd);
+      }
+    }
+
+    res.json({
+      success: true,
+      adsWatched: user.adsWatched,
+      canWatchAd,
+      timeRemaining,
+    });
   } catch (error) {
-      console.error('Error retrieving ads watched:', error);
-      res.status(500).json({ success: false, message: 'Error retrieving ads watched.' });
+    console.error('Error retrieving ads watched:', error);
+    res.status(500).json({ success: false, message: 'Error retrieving ads watched.' });
   }
 });
+
+
 
 
 app.post('/update-ads-watched', async (req, res) => {
@@ -809,67 +830,22 @@ app.post('/update-ads-watched', async (req, res) => {
 
   try {
     let user = await UserProgress.findOne({ telegramId: userId });
-
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'Пользователь не найден.' });
-    }
-
-    const currentTime = new Date();
-    const lastAdWatchTime = user.lastAdWatchTime;
-
-    // Если прошло меньше 3 минут с момента последнего просмотра рекламы
-    if (lastAdWatchTime && (currentTime - lastAdWatchTime) < 3 * 60 * 1000) {
-      const remainingTime = 3 * 60 * 1000 - (currentTime - lastAdWatchTime);
-      return res.status(400).json({ 
-        success: false, 
-        message: `Подождите ${Math.ceil(remainingTime / 1000)} секунд перед просмотром следующей рекламы.` 
-      });
-    }
-
-    // Обновляем время последнего просмотра рекламы
-    user.lastAdWatchTime = currentTime;
-    user.adsWatched += 1;
-    await user.save();
-
-    res.json({ success: true, message: 'Реклама просмотрена успешно.' });
-  } catch (error) {
-    console.error('Ошибка при показе рекламы:', error);
-    res.status(500).json({ success: false, message: 'Ошибка при показе рекламы.' });
-  }
-});
-
-app.get('/get-ads-watched', async (req, res) => {
-  const { userId } = req.query;
-
-  try {
-    const user = await UserProgress.findOne({ telegramId: userId });
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found.' });
     }
 
-    const currentTime = new Date();
-    const lastAdWatchTime = user.lastAdWatchTime;
-
-    // Проверяем, прошло ли 3 минуты
-    if (lastAdWatchTime && (currentTime - lastAdWatchTime) < 3 * 60 * 1000) {
-      const remainingTime = 3 * 60 * 1000 - (currentTime - lastAdWatchTime);
-      return res.json({ 
-        success: false, 
-        message: `Подождите ${Math.ceil(remainingTime / 1000)} секунд перед просмотром следующей рекламы.` 
-      });
-    }
-
     user.adsWatched += 1;
     user.AlladsWatched += 1;
+    user.lastAdWatchTime = new Date(); // Обновляем время последнего просмотра рекламы
     await user.save();
 
-    // Возвращаем количество просмотренных реклам и успех
     res.json({ success: true, adsWatched: user.adsWatched });
   } catch (error) {
-    console.error('Error retrieving ads watched:', error);
-    res.status(500).json({ success: false, message: 'Error retrieving ads watched.' });
+    console.error('Error updating ads watched:', error);
+    res.status(500).json({ success: false, message: 'Error updating ads watched.' });
   }
 });
+
 
 app.post('/add-coins', async (req, res) => {
   const { userId, amount } = req.body;
