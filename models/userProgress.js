@@ -55,7 +55,7 @@ const UserSchema = new mongoose.Schema({
      default: false
     
   },
-  hasMintedNFT: {
+    hasMintedNFT: {
     type: Boolean,
     default: false
   },

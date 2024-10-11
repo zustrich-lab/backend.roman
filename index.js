@@ -770,21 +770,21 @@ app.get('/leaderboard', async (req, res) => {
 });
 
 app.post('/get-referral-count', async (req, res) => {
-  const { userId } = req.body;
-
-  try {
-    const user = await UserProgress.findOne({ telegramId: userId });
-    if (user) {
-      const referralCount = user.referredUsers ? user.referredUsers.length : 0;
-      res.json({ success: true, referralCount });
-    } else {
-      res.status(404).json({ success: false, message: 'User not found.' });
+    const { userId } = req.body;
+  
+    try {
+      const user = await UserProgress.findOne({ telegramId: userId });
+      if (user) {
+        const referralCount = user.referredUsers ? user.referredUsers.length : 0;
+        res.json({ success: true, referralCount });
+      } else {
+        res.status(404).json({ success: false, message: 'User not found.' });
+      }
+    } catch (error) {
+      console.error('Error fetching referral count:', error);
+      res.status(500).json({ success: false, message: 'Server error' });
     }
-  } catch (error) {
-    console.error('Error fetching referral count:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
-  }
-});
+  });
 
 
 
