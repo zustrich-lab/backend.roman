@@ -772,7 +772,7 @@ app.get('/leaderboard', async (req, res) => {
 });
 
 app.get('/get-ads-watched', async (req, res) => {
-  const { userId } = req.query;
+  const { userId } = req.body;
 
   try {
     const user = await UserProgress.findOne({ telegramId: userId });
