@@ -838,6 +838,39 @@ app.post('/update-ads-watched', async (req, res) => {
   }
 });
 
+app.get('/get-ads-watched', async (req, res) => {
+  const { userId } = req.query;
+
+  try {
+    const user = await UserProgress.findOne({ telegramId: userId });
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    const currentTime = new Date();
+    const lastAdWatchTime = user.lastAdWatchTime;
+
+    // Проверяем, прошло ли 3 минуты
+    if (lastAdWatchTime && (currentTime - lastAdWatchTime) < 3 * 60 * 1000) {
+      const remainingTime = 3 * 60 * 1000 - (currentTime - lastAdWatchTime);
+      return res.json({ 
+        success: false, 
+        message: `Подождите ${Math.ceil(remainingTime / 1000)} секунд перед просмотром следующей рекламы.` 
+      });
+    }
+
+    user.adsWatched += 1;
+    user.AlladsWatched += 1;
+    await user.save();
+
+    // Возвращаем количество просмотренных реклам и успех
+    res.json({ success: true, adsWatched: user.adsWatched });
+  } catch (error) {
+    console.error('Error retrieving ads watched:', error);
+    res.status(500).json({ success: false, message: 'Error retrieving ads watched.' });
+  }
+});
+
 app.post('/add-coins', async (req, res) => {
   const { userId, amount } = req.body;
 
