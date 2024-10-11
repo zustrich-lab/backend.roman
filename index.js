@@ -771,7 +771,7 @@ app.get('/leaderboard', async (req, res) => {
   }
 });
 
-app.get('/get-ads-watched', async (req, res) => {
+app.post('/get-ads-watched', async (req, res) => {
   const { userId } = req.query;
 
   try {
