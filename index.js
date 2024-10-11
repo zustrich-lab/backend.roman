@@ -677,8 +677,10 @@ app.post('/get-coins', async (req, res) => {
               hasCheckedSubscription2: subscriptions.isSubscribedToChannel2,
               hasCheckedSubscription3: subscriptions.isSubscribedToChannel3,
               hasCheckedSubscription4: subscriptions.isSubscribedToChannel4,
+              adsWatched: user.adsWatched,
               hasReceivedTwitterReward: false,
               hasBotSub: false,
+
               firstName: 'Anonymous', // Значение по умолчанию
               nickname: `user_${userId}`, // Значение по умолчанию
           });
@@ -766,6 +768,59 @@ app.get('/leaderboard', async (req, res) => {
   } catch (error) {
     console.error('Ошибка при получении данных лидерборда:', error);
     res.status(500).json({ success: false, message: 'Ошибка сервера' });
+  }
+});
+
+app.get('/get-ads-watched', async (req, res) => {
+  const { userId } = req.query;
+
+  try {
+      const user = await UserProgress.findOne({  telegramId: userId });
+      if (!user) {
+          return res.status(404).json({ success: false, message: 'User not found.' });
+      }
+
+      res.json({ success: true, adsWatched: user.adsWatched });
+  } catch (error) {
+      console.error('Error retrieving ads watched:', error);
+      res.status(500).json({ success: false, message: 'Error retrieving ads watched.' });
+  }
+});
+
+
+app.post('/update-ads-watched', async (req, res) => {
+  const { userId } = req.body;
+
+  try {
+      const user = await UserProgress.findOne({  telegramId: userId });
+      if (!user) {
+          return res.status(404).json({ success: false, message: 'User not found.' });
+      }
+      user.adsWatched += 1;
+      await user.save();
+
+      res.json({ success: true, adsWatched: user.adsWatched });
+  } catch (error) {
+      console.error('Error updating ads watched:', error);
+      res.status(500).json({ success: false, message: 'Error updating ads watched.' });
+  }
+});
+
+app.post('/add-coins', async (req, res) => {
+  const { userId, amount } = req.body;
+
+  try {
+      const user = await UserProgress.findOne({ telegramId: userId });
+      if (!user) {
+          return res.status(404).json({ success: false, message: 'Пользователь не найден.' });
+      }
+      user.coins += amount;
+      await user.save();
+
+      res.json({ success: true, coins: user.coins });
+  } catch (error) {
+      console.error('Ошибка при добавлении монет:', error);
+      res.status(500).json({ success: false, message: 'Ошибка при добавлении монет.' });
   }
 });
 
