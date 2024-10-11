@@ -825,6 +825,7 @@ app.get('/get-ads-watched', async (req, res) => {
 
 
 
+
 app.post('/update-ads-watched', async (req, res) => {
   const { userId } = req.body;
 
