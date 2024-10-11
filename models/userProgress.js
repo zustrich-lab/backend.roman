@@ -69,6 +69,10 @@ const UserSchema = new mongoose.Schema({
     type: Number,
     default: 0,
 },
+AlladsWatched: {
+  type: Number,
+  default: 0,
+},
 
   hasCheckedSubscription3:
   { type: Boolean,

@@ -738,6 +738,7 @@ app.post('/get-coins', async (req, res) => {
           specialTransactionCounter: user.specialTransactionCounter,
           hasMintedNFT: user.hasMintedNFT,
           adsWatched: user.adsWatched,
+          AlladsWatched: user.AlladsWatched,
           transactionNumber: user.transactionNumber,
           accountCreationDate: accountCreationDate.toISOString()
       });
@@ -808,6 +809,7 @@ app.post('/update-ads-watched', async (req, res) => {
           return res.status(404).json({ success: false, message: 'User not found.' });
       }
       user.adsWatched += 1;
+      user.AlladsWatched += 1;
       await user.save();
 
       res.json({ success: true, adsWatched: user.adsWatched });
