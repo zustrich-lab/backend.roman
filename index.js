@@ -775,7 +775,7 @@ app.get('/get-ads-watched', async (req, res) => {
   const { userId } = req.query;
 
   try {
-      const user = await UserProgress.findOne({  telegramId: userId });
+    let user = await UserProgress.findOne({ telegramId: userId });
       if (!user) {
           return res.status(404).json({ success: false, message: 'User not found.' });
       }
@@ -792,7 +792,7 @@ app.post('/update-ads-watched', async (req, res) => {
   const { userId } = req.body;
 
   try {
-      const user = await UserProgress.findOne({  telegramId: userId });
+    let user = await UserProgress.findOne({ telegramId: userId });
       if (!user) {
           return res.status(404).json({ success: false, message: 'User not found.' });
       }
@@ -810,7 +810,7 @@ app.post('/add-coins', async (req, res) => {
   const { userId, amount } = req.body;
 
   try {
-      const user = await UserProgress.findOne({ telegramId: userId });
+    let user = await UserProgress.findOne({ telegramId: userId });
       if (!user) {
           return res.status(404).json({ success: false, message: 'Пользователь не найден.' });
       }
