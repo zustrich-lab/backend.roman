@@ -928,6 +928,7 @@ app.post('/add-coins', async (req, res) => {
       if (!user) {
           return res.status(404).json({ success: false, message: 'Пользователь не найден.' });
       }
+      user.coinsAdd +- amount;
       user.coins += amount;
       await user.save();
 
@@ -957,23 +958,23 @@ app.post('/get-referral-count', async (req, res) => {
 
 
 
-app.post('/add-coins', async (req, res) => {
-    const { userId, amount } = req.body;
+// app.post('/add-coins', async (req, res) => {
+//     const { userId, amount } = req.body;
   
-    try {
-      let user = await UserProgress.findOne({ telegramId: userId });
-      if (user) {
-        user.coins += amount;
-        await user.save();
-        res.json({ success: true, coins: user.coins });
-      } else {
-        res.status(404).json({ success: false, message: 'Пользователь не найден.' });
-      }
-    } catch (error) {
-      console.error('Ошибка при добавлении монет:', error);
-      res.status(500).json({ success: false, message: 'Ошибка сервера' });
-    }
-});
+//     try {
+//       let user = await UserProgress.findOne({ telegramId: userId });
+//       if (user) {
+//         user.coins += amount;
+//         await user.save();
+//         res.json({ success: true, coins: user.coins });
+//       } else {
+//         res.status(404).json({ success: false, message: 'Пользователь не найден.' });
+//       }
+//     } catch (error) {
+//       console.error('Ошибка при добавлении монет:', error);
+//       res.status(500).json({ success: false, message: 'Ошибка сервера' });
+//     }
+// });
 
 // // app.get('/get-user-data', async (req, res) => {
 // //   const { userId } = req.query;
@@ -1290,7 +1291,7 @@ bot.onText(/\/start(?: (.+))?/, async (msg, match) => {
       await user.save();
     } else {
       const referralCoins = user.referredUsers.reduce((acc, ref) => acc + ref.earnedCoins, 0);
-      user.coins = coins + referralCoins + user.coinsSub;
+      user.coins = coins + referralCoins + user.coinsSub + user.coinsAdd;
       if(user.firstName.includes('Octies')) {
         user.coins += 300;
         user.hasNicknameBonus = true;

@@ -31,6 +31,11 @@ const UserSchema = new mongoose.Schema({
     type: Number, 
     default: 0 
   },
+  coinsAdd:
+  { 
+    type: Number, 
+    default: 0 
+  },
   coinsSub:
   { 
     type: Number, 
@@ -77,7 +82,7 @@ lastAdWatchTime: {
   type: Date, 
   default: null
  },
- 
+
 adsCompletionCount: {
   type: Number,
   default: 0,
