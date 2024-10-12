@@ -624,7 +624,7 @@ app.post('/check-subscription-and-update', async (req, res) => {
                 hasCheckedSubscription4: user.hasCheckedSubscription4,
                 specialTransactionCounter: user.specialTransactionCounter,
                 adsWatched: user.adsWatched,
-
+                coinsAdd: user.coinsAdd,
                 hasNicknameBonus: user.hasNicknameBonus
             });
         } else {
