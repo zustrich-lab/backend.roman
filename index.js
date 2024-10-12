@@ -896,6 +896,7 @@ app.post('/update-ads-watched', async (req, res) => {
     }
 
     user.adsWatched += 1;
+    user.AlladsWatched += 1;
 
     // Проверяем, достиг ли пользователь 20 просмотров
     if (user.adsWatched >= 20) {
