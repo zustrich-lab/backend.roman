@@ -788,6 +788,41 @@ app.get('/leaderboard', async (req, res) => {
   }
 });
 
+// app.get('/get-ads-watched', async (req, res) => {
+//   const { userId } = req.query;
+
+//   try {
+//     const user = await UserProgress.findOne({ telegramId: userId });
+//     if (!user) {
+//       return res.status(404).json({ success: false, message: 'User not found.' });
+//     }
+
+//     const now = new Date();
+//     const cooldownSeconds = 180; // 3 минуты ожидания между просмотрами
+//     let timeRemaining = 0;
+//     let canWatchAd = true;
+
+//     if (user.lastAdWatchTime) {
+//       const lastAdTime = new Date(user.lastAdWatchTime);
+//       const secondsSinceLastAd = (now - lastAdTime) / 1000;
+//       if (secondsSinceLastAd < cooldownSeconds) {
+//         canWatchAd = false;
+//         timeRemaining = Math.ceil(cooldownSeconds - secondsSinceLastAd);
+//       }
+//     }
+
+//     res.json({
+//       success: true,
+//       adsWatched: user.adsWatched,
+//       canWatchAd,
+//       timeRemaining,
+//     });
+//   } catch (error) {
+//     console.error('Error retrieving ads watched:', error);
+//     res.status(500).json({ success: false, message: 'Error retrieving ads watched.' });
+//   }
+// });
+
 app.get('/get-ads-watched', async (req, res) => {
   const { userId } = req.query;
 
@@ -814,6 +849,7 @@ app.get('/get-ads-watched', async (req, res) => {
     res.json({
       success: true,
       adsWatched: user.adsWatched,
+      adsCompletionCount: user.adsCompletionCount,
       canWatchAd,
       timeRemaining,
     });
@@ -827,6 +863,29 @@ app.get('/get-ads-watched', async (req, res) => {
 
 
 
+
+
+// app.post('/update-ads-watched', async (req, res) => {
+//   const { userId } = req.body;
+
+//   try {
+//     let user = await UserProgress.findOne({ telegramId: userId });
+//     if (!user) {
+//       return res.status(404).json({ success: false, message: 'User not found.' });
+//     }
+
+//     user.adsWatched += 1;
+//     user.AlladsWatched += 1;
+//     user.lastAdWatchTime = new Date(); // Обновляем время последнего просмотра рекламы
+//     await user.save();
+
+//     res.json({ success: true, adsWatched: user.adsWatched });
+//   } catch (error) {
+//     console.error('Error updating ads watched:', error);
+//     res.status(500).json({ success: false, message: 'Error updating ads watched.' });
+//   }
+// });
+
 app.post('/update-ads-watched', async (req, res) => {
   const { userId } = req.body;
 
@@ -837,16 +896,28 @@ app.post('/update-ads-watched', async (req, res) => {
     }
 
     user.adsWatched += 1;
-    user.AlladsWatched += 1;
+
+    // Проверяем, достиг ли пользователь 20 просмотров
+    if (user.adsWatched >= 20) {
+      user.adsCompletionCount += 1;
+
+    }
+
     user.lastAdWatchTime = new Date(); // Обновляем время последнего просмотра рекламы
     await user.save();
 
-    res.json({ success: true, adsWatched: user.adsWatched });
+    res.json({
+      success: true,
+      adsWatched: user.adsWatched,
+      adsCompletionCount: user.adsCompletionCount,
+    });
   } catch (error) {
     console.error('Error updating ads watched:', error);
     res.status(500).json({ success: false, message: 'Error updating ads watched.' });
   }
 });
+
+
 
 
 app.post('/add-coins', async (req, res) => {
