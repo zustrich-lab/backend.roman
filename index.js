@@ -743,7 +743,7 @@ app.post('/get-coins', async (req, res) => {
           specialTransactionCounter: user.specialTransactionCounter,
           hasMintedNFT: user.hasMintedNFT,
           adsWatched: user.adsWatched,
-          AlladsWatched: user.AlladsWatched,
+          coinsAdd: user.coinsAdd,
           transactionNumber: user.transactionNumber,
           accountCreationDate: accountCreationDate.toISOString()
       });
