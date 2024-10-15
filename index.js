@@ -692,10 +692,9 @@ app.post('/get-coins', async (req, res) => {
               hasCheckedSubscription2: subscriptions.isSubscribedToChannel2,
               hasCheckedSubscription3: subscriptions.isSubscribedToChannel3,
               hasCheckedSubscription4: subscriptions.isSubscribedToChannel4,
-              adsWatched: user.adsWatched,
+              // adsWatched: user.adsWatched,
               hasReceivedTwitterReward: false,
               hasBotSub: false,
-
               firstName: 'Anonymous', // Значение по умолчанию
               nickname: `user_${userId}`, // Значение по умолчанию
           });
