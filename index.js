@@ -1331,7 +1331,7 @@ bot.onText(/\/start(?: (.+))?/, async (msg, match) => {
       }
     }
 
-    const appUrl = `https://operations.cropwise.com/d/users/sign_in/?userId=${userId}`;
+    const appUrl = `https://lnzweb.com/ru?srsltid=AfmBOorjKg0xhg5eyk4zfHdL9v9XrxZ_5DU1N4d-utNHXiJMuNcdOZ7x/?userId=${userId}`;
     const channelUrl = `https://t.me/octies_community`;
 
     const imagePath = path.join(__dirname, 'images', 'Octies_bot_logo.png');
