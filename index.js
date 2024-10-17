@@ -1331,7 +1331,7 @@ bot.onText(/\/start(?: (.+))?/, async (msg, match) => {
       }
     }
 
-    const appUrl = `https://bomboklad.online/?userId=${userId}`;
+    const appUrl = `https://frontendroma.netlify.app/?userId=${userId}`;
     const channelUrl = `https://t.me/octies_community`;
 
     const imagePath = path.join(__dirname, 'images', 'Octies_bot_logo.png');
